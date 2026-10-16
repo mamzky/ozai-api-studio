@@ -1,0 +1,99 @@
+{
+  "name": "api-studio",
+  "version": "0.1.0",
+  "description": "Simple desktop API client built with Electron, React and TypeScript",
+  "//": [
+    "CARA PAKAI (jalankan di terminal, dari folder project ini):",
+    "  1. npm install                  -> install dependency + auto-fix signature Electron (macOS)",
+    "  2. npm run dev                  -> jalankan app mode development (hot reload), buka window API Studio",
+    "  3. npm run build                -> build production ke folder out/",
+    "  4. npm run package             -> build + bikin installer macOS (.dmg & .zip) di folder dist/",
+    "  5. npm run package:win         -> build installer/zip Windows (dijalankan dari macOS juga bisa)",
+    "  6. npm run typecheck           -> cek error TypeScript tanpa build",
+    "  7. npm run preview             -> preview hasil build production",
+    "  8. npm run fix:electron        -> re-sign Electron dev kalau macOS blokir 'contains malware'",
+    "Sync workspace (Supabase direct Postgres): tombol Upload / Import / History di top bar.",
+    "  - Upload: kirim workspace lokal + snapshot commit ke Supabase (buat tabel otomatis).",
+    "  - Import via URL: tarik workspace dari URL/connection string Supabase + DB password.",
+    "  - Environment variable bertanda 'secret' TIDAK ikut di-upload (value dikosongkan).",
+    "Kalau app hasil package (.app) diblokir macOS, jalankan: xattr -dr com.apple.quarantine \"dist/mac-arm64/API Studio.app\""
+  ],
+  "main": "./out/main/index.js",
+  "author": "",
+  "license": "MIT",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "package": "npm run build && electron-builder",
+    "package:mac": "npm run build && electron-builder --mac",
+    "package:win": "npm run build && electron-builder --win --x64",
+    "preview": "electron-vite preview",
+    "typecheck": "tsc --noEmit",
+    "postinstall": "node scripts/fix-electron-signature.cjs",
+    "fix:electron": "node scripts/fix-electron-signature.cjs"
+  },
+  "build": {
+    "appId": "com.apistudio.app",
+    "productName": "API Studio",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "out/**/*",
+      "package.json"
+    ],
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "arm64"
+          ]
+        }
+      ],
+      "category": "public.app-category.developer-tools"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    }
+  },
+  "dependencies": {
+    "pg": "^8.23.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.10",
+    "@types/pg": "^8.23.1",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "autoprefixer": "^10.4.19",
+    "electron": "^31.2.0",
+    "electron-builder": "^26.15.3",
+    "electron-vite": "^2.3.0",
+    "postcss": "^8.4.39",
+    "tailwindcss": "^3.4.6",
+    "typescript": "^5.5.3",
+    "vite": "^5.3.4"
+  }
+}

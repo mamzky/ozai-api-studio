@@ -1,0 +1,80 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-studio-border;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    @apply bg-studio-bg text-studio-text font-sans antialiased;
+    margin: 0;
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  ::selection {
+    @apply bg-studio-accent/40;
+  }
+}
+
+@layer utilities {
+  .drag {
+    -webkit-app-region: drag;
+  }
+
+  .no-drag {
+    -webkit-app-region: no-drag;
+  }
+}
+
+@layer components {
+  .studio-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: #2a3341 transparent;
+  }
+
+  .studio-scroll::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  .studio-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .studio-scroll::-webkit-scrollbar-thumb {
+    background-color: #232b37;
+    border: 3px solid transparent;
+    background-clip: content-box;
+    border-radius: 999px;
+  }
+
+  .studio-scroll::-webkit-scrollbar-thumb:hover {
+    background-color: #333d4d;
+    background-clip: content-box;
+  }
+
+  .field {
+    @apply bg-studio-elevated border border-studio-border rounded-md px-3 py-1.5 text-sm text-studio-text placeholder:text-studio-faint outline-none transition-colors;
+  }
+
+  .field:focus {
+    @apply border-studio-accent/70 ring-2 ring-studio-accent/20;
+  }
+
+  .icon-btn {
+    @apply inline-flex items-center justify-center h-7 w-7 rounded-md text-studio-muted transition-colors hover:bg-studio-strong/60 hover:text-studio-text;
+  }
+
+  .btn {
+    @apply inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors;
+  }
+}
