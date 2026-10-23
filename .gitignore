@@ -14,3 +14,6 @@ release
 # sensitive / large local data
 hoppscotch-team-collections-openapi.json
 *.local.json
+
+# keep project instructions in the repo
+!AGENTS.md
