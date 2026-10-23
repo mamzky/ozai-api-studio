@@ -17,3 +17,6 @@ hoppscotch-team-collections-openapi.json
 
 # keep project instructions in the repo
 !AGENTS.md
+
+# local mock endpoint credentials
+secret.txt
