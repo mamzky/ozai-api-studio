@@ -19,6 +19,7 @@ import { applyLocalSecrets, sanitizeEnvironments } from './lib/secrets'
 import { loadHistory, saveHistory, syncPull, syncTest, syncUpload } from './services/sync'
 import { sendMockRequest } from './services/mock'
 import { parseOpenApiCollections } from './lib/openapi'
+import { mergeImportedWorkspace, parseWorkspaceExport } from './lib/workspace'
 import type { ApiRequest, ApiResponse, Collection, HistoryEntry, RequestError, WorkspaceSnapshot } from './types/api'
 
 interface MenuState {
@@ -535,6 +536,55 @@ export default function App() {
 
       try {
         const text = await file.text()
+        const workspace = parseWorkspaceExport(text)
+
+        if (workspace) {
+          const result = mergeImportedWorkspace(collections, environments, workspace)
+          if (result.addedCollections.length === 0 && result.addedEnvironments.length === 0) {
+            setAlert({
+              title: 'Workspace already imported',
+              message: `All ${workspace.collections.length} collection(s) in "${workspace.workspaceName}" already exist. Existing data was not changed.`
+            })
+            return
+          }
+
+          const skipped = result.skippedCollections.length
+          setConfirm({
+            title: 'Import workspace?',
+            message: `Add ${result.addedCollections.length} collection(s) and ${result.addedEnvironments.length} environment(s) from "${workspace.workspaceName}".${
+              skipped > 0 ? ` ${skipped} existing collection(s) will be skipped.` : ''
+            } Your current data is kept.`,
+            confirmLabel: 'Import',
+            onConfirm: () => {
+              setCollections(result.collections)
+              setEnvironments(result.environments)
+              setExpanded((prev) => {
+                const next = { ...prev }
+                result.addedCollections.forEach((collection) => {
+                  next[collection.id] = true
+                  collection.requests.forEach((request) => {
+                    const segments = request.group ?? []
+                    let path = ''
+                    segments.forEach((segment) => {
+                      path = path ? `${path}/${segment}` : segment
+                      next[`${collection.id}::${path}`] = true
+                    })
+                  })
+                })
+                return next
+              })
+
+              const first = result.addedCollections[0]
+              if (first) {
+                setSelectedCollectionId(first.id)
+                setSelectedRequestId(first.requests[0]?.id ?? null)
+              }
+              setConfirm(null)
+            }
+          })
+          return
+        }
+
         const imported = parseOpenApiCollections(text)
         if (imported.length === 0) return
         setCollections((prev) => [...prev, ...imported])
@@ -552,7 +602,7 @@ export default function App() {
         setAlert({ title: 'Import failed', message: (error as Error).message })
       }
     },
-    [setCollections]
+    [collections, environments, setCollections, setEnvironments]
   )
 
   const handleSend = useCallback(async () => {

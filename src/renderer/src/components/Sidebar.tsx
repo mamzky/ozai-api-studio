@@ -75,7 +75,7 @@ export default function Sidebar({
       <div className="flex items-center justify-between px-3 pb-1 pt-3">
         <span className="text-2xs font-semibold uppercase tracking-wider text-studio-faint">Collections</span>
         <div className="flex items-center gap-0.5">
-          <button type="button" className="icon-btn" title="Import OpenAPI" onClick={onImport}>
+          <button type="button" className="icon-btn" title="Import OpenAPI or workspace" onClick={onImport}>
             <Upload className="h-3.5 w-3.5" />
           </button>
           <button
