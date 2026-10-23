@@ -311,22 +311,63 @@ export default function App() {
     [collections, setCollections]
   )
 
+  const handleClearCollection = useCallback(
+    (collectionId: string) => {
+      const target = collections.find((collection) => collection.id === collectionId)
+      if (!target || target.requests.length === 0) return
+      const requestIds = new Set(target.requests.map((request) => request.id))
+      setConfirm({
+        title: 'Clear Collection?',
+        message: `Remove all ${target.requests.length} request(s) from "${target.name}"? The collection itself will stay.`,
+        confirmLabel: 'Clear',
+        onConfirm: () => {
+          setCollections((prev) =>
+            prev.map((collection) =>
+              collection.id === collectionId ? { ...collection, requests: [] } : collection
+            )
+          )
+          setResponses((prev) => {
+            const next = { ...prev }
+            requestIds.forEach((requestId) => delete next[requestId])
+            return next
+          })
+          setErrors((prev) => {
+            const next = { ...prev }
+            requestIds.forEach((requestId) => delete next[requestId])
+            return next
+          })
+          setSelectedRequestId((current) => (current && requestIds.has(current) ? null : current))
+          setConfirm(null)
+        }
+      })
+    },
+    [collections, setCollections]
+  )
+
   const openCollectionMenu = useCallback(
     (collectionId: string, event: ReactMouseEvent) => {
       event.preventDefault()
       event.stopPropagation()
       setSelectedCollectionId(collectionId)
+      const target = collections.find((collection) => collection.id === collectionId)
+      const requestCount = target?.requests.length ?? 0
       setMenu({
         x: event.clientX,
         y: event.clientY,
         items: [
           { label: 'New Request', onSelect: () => handleNewRequest(collectionId) },
           { label: 'Rename', onSelect: () => setRenaming({ type: 'collection', id: collectionId }) },
+          {
+            label: 'Clear Requests',
+            danger: true,
+            disabled: requestCount === 0,
+            onSelect: () => handleClearCollection(collectionId)
+          },
           { label: 'Delete', danger: true, onSelect: () => handleDeleteCollection(collectionId) }
         ]
       })
     },
-    [handleDeleteCollection, handleNewRequest]
+    [collections, handleClearCollection, handleDeleteCollection, handleNewRequest]
   )
 
   const openRequestMenu = useCallback(
