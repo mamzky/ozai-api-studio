@@ -166,3 +166,11 @@ export function X({ className = 'h-4 w-4' }: IconProps) {
     </svg>
   )
 }
+
+export function Bookmark({ className = 'h-4 w-4' }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
+      <path d="M6 4h12v16l-6-4-6 4V4z" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}

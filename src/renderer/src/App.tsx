@@ -768,6 +768,42 @@ export default function App() {
     }
   }, [active, activeEnvironment, loadingId])
 
+  const handleSaveExample = useCallback(() => {
+    if (!active) return
+    const response = responses[active.request.id]
+    if (!response) return
+
+    const requestName = active.request.name
+    const save = () => {
+      updateActiveRequest({
+        mock: true,
+        mockResponse: {
+          status: response.status,
+          statusText: response.statusText,
+          headers: response.headers.map((header) => ({ ...header })),
+          body: response.body
+        }
+      })
+      setConfirm(null)
+      setAlert({
+        title: 'Example saved',
+        message: `Response saved as the example for "${requestName}". Mock mode is now enabled.`
+      })
+    }
+
+    if (active.request.mockResponse) {
+      setConfirm({
+        title: 'Replace example response?',
+        message: `"${requestName}" already has a saved example. Replace it with this response?`,
+        confirmLabel: 'Replace',
+        onConfirm: save
+      })
+      return
+    }
+
+    save()
+  }, [active, responses, updateActiveRequest])
+
   const breadcrumb = active ? `${active.collection.name} / ${active.request.name}` : 'No request selected'
 
   return (
@@ -835,6 +871,7 @@ export default function App() {
                 loading={loadingId === active.request.id}
                 heightPct={responsePct}
                 onContextMenuSelection={openResponseVariableMenu}
+                onSaveExample={handleSaveExample}
               />
             </div>
           ) : (

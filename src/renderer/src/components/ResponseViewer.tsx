@@ -2,7 +2,7 @@ import { useRef, useState, type MouseEvent as ReactMouseEvent } from 'react'
 import JsonView from './JsonView'
 import { formatBytes } from '../lib/format'
 import { statusBg, statusTone } from '../lib/methods'
-import { Bolt, Spinner } from './Icons'
+import { Bolt, Bookmark, Spinner } from './Icons'
 import type { ApiResponse, RequestError, RequestErrorKind } from '../types/api'
 
 interface ResponseViewerProps {
@@ -11,6 +11,7 @@ interface ResponseViewerProps {
   loading: boolean
   heightPct: number
   onContextMenuSelection: (event: ReactMouseEvent, text: string) => void
+  onSaveExample: () => void
 }
 
 type ResponseTab = 'body' | 'headers'
@@ -23,7 +24,14 @@ const ERROR_COPY: Record<RequestErrorKind, { title: string; body: string }> = {
   unknown: { title: 'Request Failed', body: 'Something went wrong while sending the request.' }
 }
 
-export default function ResponseViewer({ response, error, loading, heightPct, onContextMenuSelection }: ResponseViewerProps) {
+export default function ResponseViewer({
+  response,
+  error,
+  loading,
+  heightPct,
+  onContextMenuSelection,
+  onSaveExample
+}: ResponseViewerProps) {
   const [tab, setTab] = useState<ResponseTab>('body')
   const [copied, setCopied] = useState(false)
   const selectionRef = useRef('')
@@ -106,6 +114,16 @@ export default function ResponseViewer({ response, error, loading, heightPct, on
                 </button>
               )
             })}
+          <button
+            type="button"
+            onClick={onSaveExample}
+            disabled={!response || Boolean(error) || loading}
+            title="Save this response as the mock example for this request"
+            className="ml-1 flex items-center gap-1 rounded-md px-2 py-1 text-xs text-studio-muted transition-colors hover:bg-studio-strong/50 hover:text-studio-text disabled:opacity-40"
+          >
+            <Bookmark className="h-3 w-3" />
+            Save as example
+          </button>
           <button
             type="button"
             onClick={copyBody}

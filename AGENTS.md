@@ -55,6 +55,7 @@ src/
 - Request editor: method, URL, params, auth (Bearer/Basic/API key), headers, body
 - Body: none, JSON, raw
 - Mock response per request: contoh response dari OpenAPI contract, fallback generated kalau tidak ada
+- Save as example: simpan response nyata sebagai `mockResponse` request dan aktifkan Mock
 - Response viewer: status, latency, size, JSON highlight, headers
 - Environment variables `{{var}}` dan secret variables
 - Import cURL (paste di URL bar), import OpenAPI JSON, dan import workspace export (`.json`) dengan pilihan **Add new only** atau **Replace existing** (dedupe berdasarkan nama collection)
