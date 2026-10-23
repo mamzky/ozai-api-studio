@@ -17,6 +17,7 @@ declare global {
       platform: string
       electronVersion: string
       sendRequest: (payload: HttpRequestPayload) => Promise<SendResult>
+      readClipboard: () => Promise<string>
       loadData: () => Promise<AppData | null>
       saveData: (data: AppData) => Promise<boolean>
       syncUpload: (payload: {

@@ -15,6 +15,7 @@ const api = {
   electronVersion: process.versions.electron,
   sendRequest: (payload: HttpRequestPayload): Promise<SendResult> =>
     ipcRenderer.invoke('request:send', payload),
+  readClipboard: (): Promise<string> => ipcRenderer.invoke('clipboard:read'),
   loadData: (): Promise<AppData | null> => ipcRenderer.invoke('storage:load'),
   saveData: (data: AppData): Promise<boolean> => ipcRenderer.invoke('storage:save', data),
   syncUpload: (payload: {

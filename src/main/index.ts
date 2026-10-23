@@ -1,4 +1,4 @@
-import { app, shell, BrowserWindow, ipcMain } from 'electron'
+import { app, shell, BrowserWindow, ipcMain, clipboard } from 'electron'
 import { join } from 'path'
 import { existsSync, promises as fs } from 'fs'
 import { uploadWorkspace, pullWorkspace, listCommits, testConnection } from './supabase'
@@ -121,6 +121,8 @@ async function runRequest(payload: HttpRequestPayload): Promise<SendResult> {
 
 function registerIpc(): void {
   ipcMain.handle('request:send', (_event, payload: HttpRequestPayload) => runRequest(payload))
+
+  ipcMain.handle('clipboard:read', () => clipboard.readText())
 
   ipcMain.handle('storage:load', async (): Promise<AppData | null> => {
     try {

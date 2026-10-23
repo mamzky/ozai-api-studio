@@ -183,3 +183,13 @@ export function Copy({ className = 'h-4 w-4' }: IconProps) {
     </svg>
   )
 }
+
+export function ClipboardPaste({ className = 'h-4 w-4' }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
+      <rect x="6" y="4" width="12" height="17" rx="2" />
+      <path d="M9 4.5h6M9 12h6M9 16h4" strokeLinecap="round" />
+      <path d="M4 7v3" strokeLinecap="round" />
+    </svg>
+  )
+}
