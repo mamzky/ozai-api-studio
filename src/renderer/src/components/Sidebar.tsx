@@ -14,13 +14,16 @@ interface SidebarProps {
   onToggle: (collectionId: string) => void
   selectedCollectionId: string | null
   selectedRequestId: string | null
+  selectedExampleId: string | null
   onSelectCollection: (collectionId: string) => void
   onSelectRequest: (requestId: string) => void
+  onSelectExample: (exampleId: string, requestId: string) => void
   search: string
   onSearchChange: (value: string) => void
   renaming: RenameTarget | null
   onCollectionContextMenu: (collectionId: string, event: ReactMouseEvent) => void
   onRequestContextMenu: (requestId: string, event: ReactMouseEvent) => void
+  onExampleContextMenu: (exampleId: string, requestId: string, event: ReactMouseEvent) => void
   onRenameCollection: (collectionId: string, name: string) => void
   onRenameRequest: (requestId: string, name: string) => void
   onCancelRename: () => void
@@ -36,13 +39,16 @@ export default function Sidebar({
   onToggle,
   selectedCollectionId,
   selectedRequestId,
+  selectedExampleId,
   onSelectCollection,
   onSelectRequest,
+  onSelectExample,
   search,
   onSearchChange,
   renaming,
   onCollectionContextMenu,
   onRequestContextMenu,
+  onExampleContextMenu,
   onRenameCollection,
   onRenameRequest,
   onCancelRename,
@@ -99,12 +105,15 @@ export default function Sidebar({
           onToggle={onToggle}
           selectedCollectionId={selectedCollectionId}
           selectedRequestId={selectedRequestId}
+          selectedExampleId={selectedExampleId}
           onSelectCollection={onSelectCollection}
           onSelectRequest={onSelectRequest}
+          onSelectExample={onSelectExample}
           search={search}
           renaming={renaming}
           onCollectionContextMenu={onCollectionContextMenu}
           onRequestContextMenu={onRequestContextMenu}
+          onExampleContextMenu={onExampleContextMenu}
           onRenameCollection={onRenameCollection}
           onRenameRequest={onRenameRequest}
           onCancelRename={onCancelRename}

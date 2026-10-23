@@ -55,7 +55,8 @@ src/
 - Request editor: method, URL, params, auth (Bearer/Basic/API key), headers, body
 - Body: none, JSON, raw
 - Mock response per request: contoh response dari OpenAPI contract, fallback generated kalau tidak ada
-- Save as example: simpan response nyata sebagai `mockResponse` request dan aktifkan Mock
+- Save as example: simpan response sebagai contoh dokumentasi (nama + status) di bawah request; tidak mengubah Mock
+- Examples tree: contoh response tampil sebagai child request, bisa dibuka, di-preview, dan dihapus
 - Response viewer: status, latency, size, JSON highlight, headers
 - Environment variables `{{var}}` dan secret variables
 - Import cURL (paste di URL bar), import OpenAPI JSON, dan import workspace export (`.json`) dengan pilihan **Add new only** atau **Replace existing** (dedupe berdasarkan nama collection)
@@ -76,6 +77,7 @@ src/
 9. **Jangan commit** `.env`, `*.local.json`, credential, `node_modules`, `out`, `dist`.
 10. Jika mengubah signature Electron di macOS, gunakan `npm run fix:electron`; jangan hapus script postinstall.
 11. **Mock response** dijalankan di renderer (`services/mock.ts`), tidak lewat IPC dan tidak menyentuh network. Saat `request.mock` aktif, lewati validasi URL/JSON karena tujuannya hanya menampilkan contoh response. Importer OpenAPI mengambil contoh response pertama (prioritas 200 → 2xx) dan mengaktifkan mock otomatis.
+12. **Examples** adalah fitur dokumentasi terpisah dari Mock. Simpan di `request.examples` (bukan `mockResponse`), lengkap dengan status, headers, body, dan snapshot request. Jangan mengubah state `mock` saat menyimpan example.
 
 ## Konvensi UI
 

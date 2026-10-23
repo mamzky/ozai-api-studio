@@ -8,9 +8,12 @@ import type {
   Environment,
   HttpMethod,
   KeyValue,
-  MockResponse
+  MockResponse,
+  RequestExample,
+  RequestSnapshot
 } from '../types/api'
 import { uid } from './format'
+import { statusTextFor } from './status'
 
 type Json = Record<string, unknown>
 
@@ -101,6 +104,40 @@ const normalizeMock = (value: unknown): MockResponse | undefined => {
   }
 }
 
+const normalizeSnapshot = (value: unknown, fallback: RequestSnapshot): RequestSnapshot => {
+  if (!isObject(value)) return fallback
+  const method = asString(value.method).toUpperCase() as HttpMethod
+  return {
+    method: METHODS.includes(method) ? method : fallback.method,
+    url: asString(value.url) || fallback.url,
+    params: normalizeKeyValues(value.params),
+    headers: normalizeKeyValues(value.headers),
+    auth: normalizeAuth(value.auth),
+    body: normalizeBody(value.body)
+  }
+}
+
+const normalizeExample = (value: unknown, fallback: RequestSnapshot): RequestExample | null => {
+  if (!isObject(value)) return null
+  const status = typeof value.status === 'number' ? value.status : Number(value.status)
+  if (!Number.isFinite(status)) return null
+  return {
+    id: uid('ex'),
+    name: asString(value.name).trim() || `Example ${status}`,
+    status,
+    statusText: asString(value.statusText) || statusTextFor(status),
+    headers: Array.isArray(value.headers)
+      ? value.headers.filter(isObject).map((header) => ({
+          key: asString(header.key),
+          value: asString(header.value)
+        }))
+      : [],
+    body: asString(value.body),
+    createdAt: asString(value.createdAt) || new Date().toISOString(),
+    request: normalizeSnapshot(value.request, fallback)
+  }
+}
+
 const normalizeRequest = (value: unknown): ApiRequest | null => {
   if (!isObject(value)) return null
   const method = asString(value.method).toUpperCase() as HttpMethod
@@ -108,18 +145,36 @@ const normalizeRequest = (value: unknown): ApiRequest | null => {
   const name = asString(value.name) || `${method || 'GET'} ${url}`
   const group = Array.isArray(value.group) ? value.group.map(asString).filter(Boolean) : undefined
   const mockResponse = normalizeMock(value.mockResponse)
+  const params = normalizeKeyValues(value.params)
+  const headers = normalizeKeyValues(value.headers)
+  const auth = normalizeAuth(value.auth)
+  const body = normalizeBody(value.body)
+  const snapshot: RequestSnapshot = {
+    method: METHODS.includes(method) ? method : 'GET',
+    url,
+    params,
+    headers,
+    auth,
+    body
+  }
+  const examples = Array.isArray(value.examples)
+    ? value.examples
+        .map((example) => normalizeExample(example, snapshot))
+        .filter((example): example is RequestExample => example !== null)
+    : []
 
   return {
     id: uid('req'),
     name,
-    method: METHODS.includes(method) ? method : 'GET',
+    method: snapshot.method,
     url,
-    params: normalizeKeyValues(value.params),
-    headers: normalizeKeyValues(value.headers),
-    auth: normalizeAuth(value.auth),
-    body: normalizeBody(value.body),
+    params,
+    headers,
+    auth,
+    body,
     mock: value.mock === true || (!('mock' in value) && Boolean(mockResponse)),
     ...(mockResponse ? { mockResponse } : {}),
+    ...(examples.length > 0 ? { examples } : {}),
     ...(group && group.length > 0 ? { group } : {})
   }
 }

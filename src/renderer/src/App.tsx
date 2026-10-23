@@ -10,13 +10,15 @@ import EnvironmentsModal from './components/EnvironmentsModal'
 import SyncDialog from './components/SyncDialog'
 import HistoryDialog from './components/HistoryDialog'
 import WorkspaceImportDialog from './components/WorkspaceImportDialog'
+import ExampleDialog from './components/ExampleDialog'
 import { Bolt, Plus } from './components/Icons'
 import { createRequest, findRequest } from './data/defaultData'
 import { useAppData } from './hooks/useAppData'
-import { uid } from './lib/format'
+import { byteSize, uid } from './lib/format'
 import { buildFinalUrl, buildHeaders, encodeBase64, isHttpUrl, validateJsonBody } from './lib/request'
 import { buildVariableMap, interpolate, resolveUrl } from './lib/environments'
 import { applyLocalSecrets, sanitizeEnvironments } from './lib/secrets'
+import { statusTextFor } from './lib/status'
 import { loadHistory, saveHistory, syncPull, syncTest, syncUpload } from './services/sync'
 import { sendMockRequest } from './services/mock'
 import { parseOpenApiCollections } from './lib/openapi'
@@ -27,7 +29,15 @@ import {
   type WorkspaceImportMode,
   type WorkspaceMergeResult
 } from './lib/workspace'
-import type { ApiRequest, ApiResponse, Collection, HistoryEntry, RequestError, WorkspaceSnapshot } from './types/api'
+import type {
+  ApiRequest,
+  ApiResponse,
+  Collection,
+  HistoryEntry,
+  RequestError,
+  RequestExample,
+  WorkspaceSnapshot
+} from './types/api'
 
 interface MenuState {
   x: number
@@ -46,6 +56,13 @@ interface PendingWorkspaceImport {
   workspace: ImportedWorkspace
   merge: WorkspaceMergeResult
   replace: WorkspaceMergeResult
+}
+
+interface ExampleDialogState {
+  requestId: string
+  collectionId: string
+  defaultName: string
+  response: ApiResponse
 }
 
 interface RenameTarget {
@@ -96,6 +113,7 @@ export default function App() {
   } = useAppData()
   const [selectedCollectionId, setSelectedCollectionId] = useState<string | null>(null)
   const [selectedRequestId, setSelectedRequestId] = useState<string | null>(null)
+  const [selectedExampleId, setSelectedExampleId] = useState<string | null>(null)
   const [expanded, setExpanded] = useState<Record<string, boolean>>({})
   const [search, setSearch] = useState('')
   const [workspace, setWorkspace] = useState('My Workspace')
@@ -105,6 +123,7 @@ export default function App() {
   const [menu, setMenu] = useState<MenuState | null>(null)
   const [confirm, setConfirm] = useState<ConfirmState | null>(null)
   const [workspaceImport, setWorkspaceImport] = useState<PendingWorkspaceImport | null>(null)
+  const [exampleDialog, setExampleDialog] = useState<ExampleDialogState | null>(null)
   const [renaming, setRenaming] = useState<RenameTarget | null>(null)
   const [alert, setAlert] = useState<{ title: string; message: string } | null>(null)
   const [prompt, setPrompt] = useState<PromptState | null>(null)
@@ -118,6 +137,22 @@ export default function App() {
   const splitRef = useRef<HTMLDivElement>(null)
 
   const active = useMemo(() => findRequest(collections, selectedRequestId), [collections, selectedRequestId])
+  const activeExample = useMemo(() => {
+    if (!active || !selectedExampleId) return null
+    return active.request.examples?.find((example) => example.id === selectedExampleId) ?? null
+  }, [active, selectedExampleId])
+  const exampleResponse = useMemo<ApiResponse | null>(() => {
+    if (!activeExample) return null
+    return {
+      status: activeExample.status,
+      statusText: activeExample.statusText,
+      headers: activeExample.headers,
+      body: activeExample.body,
+      timeMs: 0,
+      sizeKb: byteSize(activeExample.body),
+      example: true
+    }
+  }, [activeExample])
   const activeEnvironment = useMemo(
     () => environments.find((environment) => environment.id === activeEnvironmentId) ?? null,
     [environments, activeEnvironmentId]
@@ -146,6 +181,7 @@ export default function App() {
   const updateActiveRequest = useCallback(
     (patch: Partial<ApiRequest>) => {
       if (!selectedRequestId) return
+      setSelectedExampleId(null)
       setCollections((prev) =>
         prev.map((collection) => ({
           ...collection,
@@ -171,18 +207,54 @@ export default function App() {
     [selectedRequestId, setCollections]
   )
 
+  const handleSelectRequest = useCallback(
+    (requestId: string) => {
+      setSelectedRequestId(requestId)
+      setSelectedExampleId(null)
+      const found = findRequest(collections, requestId)
+      if (found) {
+        setSelectedCollectionId(found.collection.id)
+        setExpanded((prev) => ({ ...prev, [found.collection.id]: true }))
+      }
+    },
+    [collections]
+  )
+
+  const handleSelectCollection = useCallback((collectionId: string) => {
+    setSelectedCollectionId(collectionId)
+    setSelectedExampleId(null)
+  }, [])
+
+  const handleSelectExample = useCallback(
+    (exampleId: string, requestId: string) => {
+      const found = findRequest(collections, requestId)
+      if (!found) return
+      setSelectedRequestId(requestId)
+      setSelectedCollectionId(found.collection.id)
+      setSelectedExampleId(exampleId)
+      setExpanded((prev) => ({
+        ...prev,
+        [found.collection.id]: true,
+        [`ex:${requestId}`]: true
+      }))
+    },
+    [collections]
+  )
+
   const handleNewCollection = useCallback(() => {
     const collection: Collection = { id: uid('col'), name: 'New Collection', requests: [] }
     setCollections((prev) => [...prev, collection])
     setExpanded((prev) => ({ ...prev, [collection.id]: true }))
     setSelectedCollectionId(collection.id)
     setSelectedRequestId(null)
+    setSelectedExampleId(null)
     setRenaming({ type: 'collection', id: collection.id })
   }, [setCollections])
 
   const handleNewRequest = useCallback(
     (collectionId: string) => {
       const request = createRequest()
+      setSelectedExampleId(null)
       const targetId = collectionId || collections[0]?.id
 
       if (!targetId) {
@@ -250,7 +322,19 @@ export default function App() {
         params: original.params.map((param) => ({ ...param, id: uid('kv') })),
         headers: original.headers.map((header) => ({ ...header, id: uid('kv') })),
         auth: { ...original.auth },
-        body: { ...original.body }
+        body: { ...original.body },
+        examples: original.examples?.map((example) => ({
+          ...example,
+          id: uid('ex'),
+          headers: example.headers.map((header) => ({ ...header })),
+          request: {
+            ...example.request,
+            params: example.request.params.map((param) => ({ ...param, id: uid('kv') })),
+            headers: example.request.headers.map((header) => ({ ...header, id: uid('kv') })),
+            auth: { ...example.request.auth },
+            body: { ...example.request.body }
+          }
+        }))
       }
       setCollections((prev) =>
         prev.map((collection) => {
@@ -264,6 +348,7 @@ export default function App() {
       setExpanded((prev) => ({ ...prev, [found.collection.id]: true }))
       setSelectedCollectionId(found.collection.id)
       setSelectedRequestId(copy.id)
+      setSelectedExampleId(null)
     },
     [collections, setCollections]
   )
@@ -283,12 +368,13 @@ export default function App() {
               requests: collection.requests.filter((request) => request.id !== requestId)
             }))
           )
+          if (selectedRequestId === requestId) setSelectedExampleId(null)
           setSelectedRequestId((current) => (current === requestId ? null : current))
           setConfirm(null)
         }
       })
     },
-    [collections, setCollections]
+    [collections, selectedRequestId, setCollections]
   )
 
   const handleDeleteCollection = useCallback(
@@ -302,13 +388,14 @@ export default function App() {
         onConfirm: () => {
           const requestIds = new Set(target.requests.map((request) => request.id))
           setCollections((prev) => prev.filter((collection) => collection.id !== collectionId))
+          if (selectedRequestId && requestIds.has(selectedRequestId)) setSelectedExampleId(null)
           setSelectedCollectionId((current) => (current === collectionId ? null : current))
           setSelectedRequestId((current) => (current && requestIds.has(current) ? null : current))
           setConfirm(null)
         }
       })
     },
-    [collections, setCollections]
+    [collections, selectedRequestId, setCollections]
   )
 
   const closeCollection = useCallback((collectionId: string) => {
@@ -347,13 +434,14 @@ export default function App() {
             requestIds.forEach((requestId) => delete next[requestId])
             return next
           })
+          if (selectedRequestId && requestIds.has(selectedRequestId)) setSelectedExampleId(null)
           setSelectedRequestId((current) => (current && requestIds.has(current) ? null : current))
           closeCollection(collectionId)
           setConfirm(null)
         }
       })
     },
-    [closeCollection, collections, setCollections]
+    [closeCollection, collections, selectedRequestId, setCollections]
   )
 
   const openCollectionMenu = useCallback(
@@ -361,6 +449,7 @@ export default function App() {
       event.preventDefault()
       event.stopPropagation()
       setSelectedCollectionId(collectionId)
+      setSelectedExampleId(null)
       setMenu({
         x: event.clientX,
         y: event.clientY,
@@ -380,6 +469,7 @@ export default function App() {
       event.preventDefault()
       event.stopPropagation()
       setSelectedRequestId(requestId)
+      setSelectedExampleId(null)
       setMenu({
         x: event.clientX,
         y: event.clientY,
@@ -488,6 +578,7 @@ export default function App() {
     (snapshot: WorkspaceSnapshot) => {
       setCollections(snapshot.collections)
       setEnvironments((prev) => applyLocalSecrets(snapshot.environments, prev))
+      setSelectedExampleId(null)
       const first = snapshot.collections[0]
       if (first) {
         setSelectedCollectionId(first.id)
@@ -590,6 +681,7 @@ export default function App() {
 
   const applyWorkspaceImport = useCallback(
     (result: WorkspaceMergeResult, mode: WorkspaceImportMode) => {
+      setSelectedExampleId(null)
       setCollections(result.collections)
       setEnvironments(result.environments)
 
@@ -654,6 +746,7 @@ export default function App() {
 
         const imported = parseOpenApiCollections(text)
         if (imported.length === 0) return
+        setSelectedExampleId(null)
         setCollections((prev) => [...prev, ...imported])
         setExpanded((prev) => {
           const next = { ...prev }
@@ -674,6 +767,7 @@ export default function App() {
 
   const handleSend = useCallback(async () => {
     if (!active || loadingId) return
+    setSelectedExampleId(null)
     const request = active.request
     const requestId = request.id
 
@@ -768,43 +862,145 @@ export default function App() {
     }
   }, [active, activeEnvironment, loadingId])
 
-  const handleSaveExample = useCallback(() => {
+  const openExampleDialog = useCallback(() => {
     if (!active) return
     const response = responses[active.request.id]
     if (!response) return
 
-    const requestName = active.request.name
-    const save = () => {
-      updateActiveRequest({
-        mock: true,
-        mockResponse: {
-          status: response.status,
-          statusText: response.statusText,
-          headers: response.headers.map((header) => ({ ...header })),
-          body: response.body
+    const baseName = `${active.request.name} — ${response.status} ${response.statusText}`.trim()
+    let name = baseName
+    let index = 2
+    const examples = active.request.examples ?? []
+    while (examples.some((example) => example.name === name)) {
+      name = `${baseName} (${index})`
+      index += 1
+    }
+
+    setExampleDialog({
+      requestId: active.request.id,
+      collectionId: active.collection.id,
+      defaultName: name,
+      response
+    })
+  }, [active, responses])
+
+  const handleCreateExample = useCallback(
+    (values: { name: string; status: number; statusText: string }) => {
+      if (!exampleDialog) return
+      const { requestId, collectionId, response } = exampleDialog
+      const found = findRequest(collections, requestId)
+      if (!found) {
+        setExampleDialog(null)
+        return
+      }
+
+      const request = found.request
+      const example: RequestExample = {
+        id: uid('ex'),
+        name: values.name,
+        status: values.status,
+        statusText: values.statusText || statusTextFor(values.status),
+        headers: response.headers.map((header) => ({ ...header })),
+        body: response.body,
+        createdAt: new Date().toISOString(),
+        request: {
+          method: request.method,
+          url: request.url,
+          params: request.params.map((param) => ({ ...param, id: uid('kv') })),
+          headers: request.headers.map((header) => ({ ...header, id: uid('kv') })),
+          auth: { ...request.auth },
+          body: { format: request.body.format, content: request.body.content }
+        }
+      }
+
+      setCollections((prev) =>
+        prev.map((collection) =>
+          collection.id === collectionId
+            ? {
+                ...collection,
+                requests: collection.requests.map((item) =>
+                  item.id === requestId
+                    ? { ...item, examples: [...(item.examples ?? []), example] }
+                    : item
+                )
+              }
+            : collection
+        )
+      )
+      setExpanded((prev) => ({
+        ...prev,
+        [collectionId]: true,
+        [`ex:${requestId}`]: true
+      }))
+      setSelectedCollectionId(collectionId)
+      setSelectedRequestId(requestId)
+      setSelectedExampleId(example.id)
+      setExampleDialog(null)
+    },
+    [collections, exampleDialog, setCollections]
+  )
+
+  const handleDeleteExample = useCallback(
+    (exampleId: string, requestId: string) => {
+      const found = findRequest(collections, requestId)
+      const example = found?.request.examples?.find((item) => item.id === exampleId)
+      if (!found || !example) return
+
+      setConfirm({
+        title: 'Delete Example?',
+        message: `Delete example "${example.name}"? The request itself is not affected.`,
+        confirmLabel: 'Delete',
+        onConfirm: () => {
+          setCollections((prev) =>
+            prev.map((collection) => ({
+              ...collection,
+              requests: collection.requests.map((request) =>
+                request.id === requestId
+                  ? {
+                      ...request,
+                      examples: (request.examples ?? []).filter((item) => item.id !== exampleId)
+                    }
+                  : request
+              )
+            }))
+          )
+          setSelectedExampleId((current) => (current === exampleId ? null : current))
+          setConfirm(null)
         }
       })
-      setConfirm(null)
-      setAlert({
-        title: 'Example saved',
-        message: `Response saved as the example for "${requestName}". Mock mode is now enabled.`
+    },
+    [collections, setCollections]
+  )
+
+  const openExampleMenu = useCallback(
+    (exampleId: string, requestId: string, event: ReactMouseEvent) => {
+      event.preventDefault()
+      event.stopPropagation()
+      const found = findRequest(collections, requestId)
+      const example = found?.request.examples?.find((item) => item.id === exampleId)
+      if (!found || !example) return
+
+      setSelectedCollectionId(found.collection.id)
+      setSelectedRequestId(requestId)
+      setSelectedExampleId(exampleId)
+      setMenu({
+        x: event.clientX,
+        y: event.clientY,
+        items: [
+          {
+            label: 'Delete Example',
+            danger: true,
+            onSelect: () => handleDeleteExample(exampleId, requestId)
+          }
+        ]
       })
-    }
+    },
+    [collections, handleDeleteExample]
+  )
 
-    if (active.request.mockResponse) {
-      setConfirm({
-        title: 'Replace example response?',
-        message: `"${requestName}" already has a saved example. Replace it with this response?`,
-        confirmLabel: 'Replace',
-        onConfirm: save
-      })
-      return
-    }
-
-    save()
-  }, [active, responses, updateActiveRequest])
-
-  const breadcrumb = active ? `${active.collection.name} / ${active.request.name}` : 'No request selected'
+  const breadcrumb = active
+    ? `${active.collection.name} / ${active.request.name}${activeExample ? ` / ${activeExample.name}` : ''}`
+    : 'No request selected'
 
   return (
     <div className="flex h-screen flex-col bg-studio-bg text-studio-text">
@@ -830,13 +1026,16 @@ export default function App() {
           onToggle={toggleCollection}
           selectedCollectionId={selectedCollectionId}
           selectedRequestId={selectedRequestId}
-          onSelectCollection={setSelectedCollectionId}
-          onSelectRequest={setSelectedRequestId}
+          selectedExampleId={selectedExampleId}
+          onSelectCollection={handleSelectCollection}
+          onSelectRequest={handleSelectRequest}
+          onSelectExample={handleSelectExample}
           search={search}
           onSearchChange={setSearch}
           renaming={renaming}
           onCollectionContextMenu={openCollectionMenu}
           onRequestContextMenu={openRequestMenu}
+          onExampleContextMenu={openExampleMenu}
           onRenameCollection={handleRenameCollection}
           onRenameRequest={handleRenameRequest}
           onCancelRename={() => setRenaming(null)}
@@ -866,12 +1065,16 @@ export default function App() {
                 <div className="h-0.5 w-10 rounded-full bg-studio-strong transition-colors group-hover:bg-studio-accent" />
               </div>
               <ResponseViewer
-                response={responses[active.request.id] ?? null}
-                error={errors[active.request.id] ?? null}
-                loading={loadingId === active.request.id}
+                response={activeExample ? exampleResponse : responses[active.request.id] ?? null}
+                error={activeExample ? null : errors[active.request.id] ?? null}
+                loading={activeExample ? false : loadingId === active.request.id}
                 heightPct={responsePct}
                 onContextMenuSelection={openResponseVariableMenu}
-                onSaveExample={handleSaveExample}
+                onSaveExample={openExampleDialog}
+                exampleMeta={
+                  activeExample ? { name: activeExample.name, request: activeExample.request } : null
+                }
+                onCloseExample={() => setSelectedExampleId(null)}
               />
             </div>
           ) : (
@@ -909,6 +1112,16 @@ export default function App() {
           hideCancel
           onConfirm={() => setAlert(null)}
           onCancel={() => setAlert(null)}
+        />
+      )}
+
+      {exampleDialog && (
+        <ExampleDialog
+          defaultName={exampleDialog.defaultName}
+          defaultStatus={exampleDialog.response.status}
+          defaultStatusText={exampleDialog.response.statusText}
+          onSave={handleCreateExample}
+          onCancel={() => setExampleDialog(null)}
         />
       )}
 

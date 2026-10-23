@@ -18,3 +18,11 @@ export function prettyJson(raw: string): string {
     return raw
   }
 }
+
+export function byteSize(value: string): number {
+  try {
+    return new TextEncoder().encode(value).length / 1024
+  } catch {
+    return value.length / 1024
+  }
+}

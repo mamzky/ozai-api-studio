@@ -1,7 +1,7 @@
 import type { MouseEvent as ReactMouseEvent } from 'react'
 import type { ApiRequest, Collection } from '../types/api'
-import { METHOD_STYLES } from '../lib/methods'
-import { ChevronDown, ChevronRight, Folder, Layers, Plus } from './Icons'
+import { METHOD_STYLES, statusTone } from '../lib/methods'
+import { Bookmark, ChevronDown, ChevronRight, Folder, Layers, Plus } from './Icons'
 import InlineEdit from './InlineEdit'
 
 interface RenameTarget {
@@ -15,12 +15,15 @@ interface CollectionTreeProps {
   onToggle: (key: string) => void
   selectedCollectionId: string | null
   selectedRequestId: string | null
+  selectedExampleId: string | null
   onSelectCollection: (collectionId: string) => void
   onSelectRequest: (requestId: string) => void
+  onSelectExample: (exampleId: string, requestId: string) => void
   search: string
   renaming: RenameTarget | null
   onCollectionContextMenu: (collectionId: string, event: ReactMouseEvent) => void
   onRequestContextMenu: (requestId: string, event: ReactMouseEvent) => void
+  onExampleContextMenu: (exampleId: string, requestId: string, event: ReactMouseEvent) => void
   onRenameCollection: (collectionId: string, name: string) => void
   onRenameRequest: (requestId: string, name: string) => void
   onCancelRename: () => void
@@ -72,12 +75,15 @@ export default function CollectionTree({
   onToggle,
   selectedCollectionId,
   selectedRequestId,
+  selectedExampleId,
   onSelectCollection,
   onSelectRequest,
+  onSelectExample,
   search,
   renaming,
   onCollectionContextMenu,
   onRequestContextMenu,
+  onExampleContextMenu,
   onRenameCollection,
   onRenameRequest,
   onCancelRename,
@@ -94,7 +100,8 @@ export default function CollectionTree({
           request.name.toLowerCase().includes(query) ||
           request.url.toLowerCase().includes(query) ||
           request.method.toLowerCase().includes(query) ||
-          (request.group ?? []).some((segment) => segment.toLowerCase().includes(query))
+          (request.group ?? []).some((segment) => segment.toLowerCase().includes(query)) ||
+          (request.examples ?? []).some((example) => example.name.toLowerCase().includes(query))
       )
       return collectionMatches ? collection : { ...collection, requests }
     })
@@ -104,41 +111,95 @@ export default function CollectionTree({
     )
 
   const renderRequest = (request: ApiRequest) => {
-    const active = request.id === selectedRequestId
+    const examples = request.examples ?? []
+    const exampleKey = `ex:${request.id}`
+    const examplesOpen = query ? true : Boolean(expanded[exampleKey])
+    const active = request.id === selectedRequestId && !selectedExampleId
     const method = METHOD_STYLES[request.method]
     const isRenamingRequest = renaming?.type === 'request' && renaming.id === request.id
 
     return (
-      <button
-        key={request.id}
-        type="button"
-        onClick={() => onSelectRequest(request.id)}
-        onContextMenu={(event) => onRequestContextMenu(request.id, event)}
-        className={`group flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm transition-colors ${
-          active
-            ? 'bg-studio-accent/15 text-studio-text ring-1 ring-inset ring-studio-accent/30'
-            : 'text-studio-muted hover:bg-studio-strong/40 hover:text-studio-text'
-        }`}
-      >
-        <span className={`w-9 shrink-0 font-mono text-[10px] font-bold ${method.text}`}>{request.method}</span>
+      <div key={request.id} className="flex flex-col gap-0.5">
+        <div
+          onContextMenu={(event) => onRequestContextMenu(request.id, event)}
+          className={`group flex w-full items-center gap-0.5 rounded-md transition-colors ${
+            active
+              ? 'bg-studio-accent/15 text-studio-text ring-1 ring-inset ring-studio-accent/30'
+              : 'text-studio-muted hover:bg-studio-strong/40 hover:text-studio-text'
+          }`}
+        >
+          <button
+            type="button"
+            onClick={() => onSelectRequest(request.id)}
+            title={`${request.method} ${request.url}`}
+            className="flex min-w-0 flex-1 items-center gap-2 px-2 py-1.5 text-left text-sm"
+          >
+            <span className={`w-9 shrink-0 font-mono text-[10px] font-bold ${method.text}`}>{request.method}</span>
 
-        {isRenamingRequest ? (
-          <InlineEdit
-            value={request.name}
-            onCommit={(name) => onRenameRequest(request.id, name)}
-            onCancel={onCancelRename}
-          />
-        ) : (
-          <span className="truncate">{request.name}</span>
-        )}
+            {isRenamingRequest ? (
+              <InlineEdit
+                value={request.name}
+                onCommit={(name) => onRenameRequest(request.id, name)}
+                onCancel={onCancelRename}
+              />
+            ) : (
+              <span className="truncate">{request.name}</span>
+            )}
 
-        {!isRenamingRequest && request.mock && (
-          <span
-            className="ml-auto h-1 w-1 shrink-0 rounded-full bg-violet-400/70"
-            title="Mock response enabled"
-          />
+            {!isRenamingRequest && request.mock && (
+              <span
+                className="ml-auto h-1 w-1 shrink-0 rounded-full bg-violet-400/70"
+                title="Mock response enabled"
+              />
+            )}
+          </button>
+
+          {examples.length > 0 && (
+            <button
+              type="button"
+              onClick={() => onToggle(exampleKey)}
+              title={examplesOpen ? 'Hide examples' : 'Show examples'}
+              className="mr-1 flex h-6 shrink-0 items-center gap-1 rounded px-1.5 text-2xs text-studio-faint transition-colors hover:bg-studio-strong/60 hover:text-studio-text"
+            >
+              <Bookmark className="h-3 w-3" />
+              {examples.length}
+              {examplesOpen ? (
+                <ChevronDown className="h-3 w-3" />
+              ) : (
+                <ChevronRight className="h-3 w-3" />
+              )}
+            </button>
+          )}
+        </div>
+
+        {examplesOpen && examples.length > 0 && (
+          <div className="ml-[22px] flex flex-col gap-0.5 border-l border-studio-border pl-2">
+            {examples.map((example) => {
+              const exampleActive = example.id === selectedExampleId
+              return (
+                <button
+                  key={example.id}
+                  type="button"
+                  onClick={() => onSelectExample(example.id, request.id)}
+                  onContextMenu={(event) => onExampleContextMenu(example.id, request.id, event)}
+                  title={`${example.status} ${example.statusText} — ${example.name}`}
+                  className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs transition-colors ${
+                    exampleActive
+                      ? 'bg-sky-500/15 text-studio-text ring-1 ring-inset ring-sky-500/30'
+                      : 'text-studio-muted hover:bg-studio-strong/40 hover:text-studio-text'
+                  }`}
+                >
+                  <Bookmark className="h-3 w-3 shrink-0 text-sky-400/80" />
+                  <span className={`w-8 shrink-0 font-mono text-[10px] font-bold ${statusTone(example.status)}`}>
+                    {example.status}
+                  </span>
+                  <span className="truncate">{example.name}</span>
+                </button>
+              )
+            })}
+          </div>
         )}
-      </button>
+      </div>
     )
   }
 

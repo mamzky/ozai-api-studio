@@ -3,7 +3,7 @@ import JsonView from './JsonView'
 import { formatBytes } from '../lib/format'
 import { statusBg, statusTone } from '../lib/methods'
 import { Bolt, Bookmark, Spinner } from './Icons'
-import type { ApiResponse, RequestError, RequestErrorKind } from '../types/api'
+import type { ApiResponse, RequestError, RequestErrorKind, RequestSnapshot } from '../types/api'
 
 interface ResponseViewerProps {
   response: ApiResponse | null
@@ -12,6 +12,8 @@ interface ResponseViewerProps {
   heightPct: number
   onContextMenuSelection: (event: ReactMouseEvent, text: string) => void
   onSaveExample: () => void
+  exampleMeta?: { name: string; request: RequestSnapshot } | null
+  onCloseExample: () => void
 }
 
 type ResponseTab = 'body' | 'headers'
@@ -30,7 +32,9 @@ export default function ResponseViewer({
   loading,
   heightPct,
   onContextMenuSelection,
-  onSaveExample
+  onSaveExample,
+  exampleMeta,
+  onCloseExample
 }: ResponseViewerProps) {
   const [tab, setTab] = useState<ResponseTab>('body')
   const [copied, setCopied] = useState(false)
@@ -70,6 +74,24 @@ export default function ResponseViewer({
       style={{ height: `${heightPct}%` }}
       className="flex min-h-[120px] shrink-0 flex-col bg-studio-panel"
     >
+      {exampleMeta && (
+        <div className="flex shrink-0 items-center gap-2 border-b border-sky-500/20 bg-sky-500/[0.06] px-4 py-1.5">
+          <Bookmark className="h-3 w-3 shrink-0 text-sky-300" />
+          <span className="text-2xs font-semibold uppercase tracking-wider text-sky-300">Example</span>
+          <span className="truncate text-xs text-studio-text">{exampleMeta.name}</span>
+          <span className="hidden truncate font-mono text-2xs text-studio-faint md:inline">
+            {exampleMeta.request.method} {exampleMeta.request.url}
+          </span>
+          <button
+            type="button"
+            onClick={onCloseExample}
+            className="ml-auto shrink-0 rounded px-2 py-0.5 text-2xs text-studio-muted transition-colors hover:bg-studio-strong/50 hover:text-studio-text"
+          >
+            Back to live response
+          </button>
+        </div>
+      )}
+
       <div className="flex items-center gap-3 border-b border-studio-border px-4 py-2">
         <span className="text-xs font-semibold uppercase tracking-wider text-studio-faint">Response</span>
 
@@ -80,8 +102,16 @@ export default function ResponseViewer({
             >
               {response.status} {response.statusText}
             </span>
-            <span className="font-mono text-xs text-studio-muted">{response.timeMs} ms</span>
+            <span className="font-mono text-xs text-studio-muted">
+              {response.example ? '—' : `${response.timeMs} ms`}
+            </span>
             <span className="font-mono text-xs text-studio-muted">{formatBytes(response.sizeKb)}</span>
+            {response.example && (
+              <span className="flex items-center gap-1 rounded-md border border-sky-500/30 bg-sky-500/10 px-1.5 py-0.5 text-2xs font-medium text-sky-300">
+                <Bookmark className="h-2.5 w-2.5" />
+                Example
+              </span>
+            )}
             {response.mocked && (
               <span className="flex items-center gap-1 rounded-md border border-violet-500/30 bg-violet-500/10 px-1.5 py-0.5 text-2xs font-medium text-violet-300">
                 <Bolt className="h-2.5 w-2.5" />
@@ -114,16 +144,18 @@ export default function ResponseViewer({
                 </button>
               )
             })}
-          <button
-            type="button"
-            onClick={onSaveExample}
-            disabled={!response || Boolean(error) || loading}
-            title="Save this response as the mock example for this request"
-            className="ml-1 flex items-center gap-1 rounded-md px-2 py-1 text-xs text-studio-muted transition-colors hover:bg-studio-strong/50 hover:text-studio-text disabled:opacity-40"
-          >
-            <Bookmark className="h-3 w-3" />
-            Save as example
-          </button>
+          {!response?.example && (
+            <button
+              type="button"
+              onClick={onSaveExample}
+              disabled={!response || Boolean(error) || loading}
+              title="Save this response as an example for this request"
+              className="ml-1 flex items-center gap-1 rounded-md px-2 py-1 text-xs text-studio-muted transition-colors hover:bg-studio-strong/50 hover:text-studio-text disabled:opacity-40"
+            >
+              <Bookmark className="h-3 w-3" />
+              Save as example
+            </button>
+          )}
           <button
             type="button"
             onClick={copyBody}

@@ -8,7 +8,9 @@ import type {
   Environment,
   EnvVariable,
   KeyValue,
-  MockResponse
+  MockResponse,
+  RequestExample,
+  RequestSnapshot
 } from '../types/api'
 import { uid } from '../lib/format'
 import seed from './seedWorkspace.json'
@@ -68,6 +70,24 @@ const cloneMockResponse = (mock: MockResponse | undefined): MockResponse | undef
       }
     : undefined
 
+const cloneSnapshot = (snapshot: RequestSnapshot): RequestSnapshot => ({
+  ...snapshot,
+  params: cloneKeyValues(snapshot.params),
+  headers: cloneKeyValues(snapshot.headers),
+  auth: { ...emptyAuth(), ...snapshot.auth },
+  body: {
+    format: snapshot.body?.format ?? 'none',
+    content: snapshot.body?.content ?? ''
+  }
+})
+
+const cloneExample = (example: RequestExample): RequestExample => ({
+  ...example,
+  id: uid('ex'),
+  headers: example.headers.map((header) => ({ ...header })),
+  request: cloneSnapshot(example.request)
+})
+
 const cloneRequest = (request: ApiRequest): ApiRequest => ({
   ...request,
   id: uid('req'),
@@ -79,7 +99,10 @@ const cloneRequest = (request: ApiRequest): ApiRequest => ({
     content: request.body?.content ?? ''
   },
   mock: request.mock ?? Boolean(request.mockResponse),
-  mockResponse: cloneMockResponse(request.mockResponse)
+  mockResponse: cloneMockResponse(request.mockResponse),
+  ...(request.examples && request.examples.length > 0
+    ? { examples: request.examples.map(cloneExample) }
+    : {})
 })
 
 export function createDefaultEnvironments(): Environment[] {

@@ -27,6 +27,27 @@ export interface BodyConfig {
   content: string
 }
 
+export interface RequestSnapshot {
+  method: HttpMethod
+  url: string
+  params: KeyValue[]
+  headers: KeyValue[]
+  auth: AuthConfig
+  body: BodyConfig
+}
+
+export interface RequestExample {
+  id: string
+  name: string
+  status: number
+  statusText: string
+  headers: ResponseHeader[]
+  body: string
+  createdAt: string
+  /** Request as it looked when the example was saved. */
+  request: RequestSnapshot
+}
+
 export interface ApiRequest {
   id: string
   name: string
@@ -41,6 +62,8 @@ export interface ApiRequest {
   mock: boolean
   /** Example response captured from an OpenAPI contract. */
   mockResponse?: MockResponse
+  /** Saved response examples for documentation (shown under the request in the tree). */
+  examples?: RequestExample[]
 }
 
 export interface Collection {
@@ -70,6 +93,8 @@ export interface ApiResponse {
   sizeKb: number
   /** True when the response came from the built-in mock instead of the network. */
   mocked?: boolean
+  /** True when this response is a saved example being previewed. */
+  example?: boolean
 }
 
 export type RequestErrorKind = 'invalid-url' | 'network' | 'timeout' | 'invalid-json' | 'unknown'
