@@ -1,0 +1,479 @@
+{
+  "app": "ozai-api-studio",
+  "version": 1,
+  "exportedAt": "2026-10-23T04:30:16.139Z",
+  "workspace": {
+    "collections": [
+      {
+        "id": "col_mvkgawe6_31",
+        "name": "User API",
+        "requests": [
+          {
+            "id": "req_mvkgawdt_3",
+            "params": [],
+            "headers": [
+              {
+                "id": "kv_mvkgawdt_1",
+                "key": "Content-Type",
+                "value": "application/json",
+                "description": "",
+                "enabled": true
+              },
+              {
+                "id": "kv_mvkgawdt_2",
+                "key": "Accept",
+                "value": "application/json",
+                "description": "",
+                "enabled": true
+              }
+            ],
+            "auth": {
+              "type": "none",
+              "token": "",
+              "username": "",
+              "password": "",
+              "apiKeyName": "",
+              "apiKeyValue": ""
+            },
+            "body": {
+              "format": "json",
+              "content": "{\n  \"username\": \"emilys\",\n  \"password\": \"emilyspass\",\n  \"expiresInMins\": 30\n}",
+              "form": []
+            },
+            "mock": true,
+            "name": "Login",
+            "method": "POST",
+            "url": "{{base_url}}/auth/login",
+            "mockResponse": {
+              "status": 200,
+              "statusText": "OK",
+              "headers": [
+                {
+                  "key": "content-type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "x-powered-by",
+                  "value": "Ozai Mock Server"
+                },
+                {
+                  "key": "cache-control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"id\": 1,\n  \"username\": \"emilys\",\n  \"email\": \"emily.johnson@x.dummyjson.com\",\n  \"firstName\": \"Emily\",\n  \"lastName\": \"Johnson\",\n  \"gender\": \"female\",\n  \"image\": \"https://dummyjson.com/icon/emilys/128\",\n  \"accessToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwibmFtZSI6IkVtaWx5In0.demo\",\n  \"refreshToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwidHlwZSI6InJlZnJlc2gifQ.demo\"\n}"
+            }
+          },
+          {
+            "id": "req_mvkgawdt_5",
+            "params": [],
+            "headers": [
+              {
+                "id": "kv_mvkgawdt_4",
+                "key": "Accept",
+                "value": "application/json",
+                "description": "",
+                "enabled": true
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{token}}",
+              "username": "",
+              "password": "",
+              "apiKeyName": "",
+              "apiKeyValue": ""
+            },
+            "body": {
+              "format": "none",
+              "content": "",
+              "form": []
+            },
+            "mock": true,
+            "name": "Get Profile",
+            "method": "GET",
+            "url": "{{base_url}}/users/1",
+            "mockResponse": {
+              "status": 200,
+              "statusText": "OK",
+              "headers": [
+                {
+                  "key": "content-type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "x-powered-by",
+                  "value": "Ozai Mock Server"
+                },
+                {
+                  "key": "cache-control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"id\": 1,\n  \"firstName\": \"Emily\",\n  \"lastName\": \"Johnson\",\n  \"maidenName\": \"Smith\",\n  \"age\": 28,\n  \"gender\": \"female\",\n  \"email\": \"emily.johnson@x.dummyjson.com\",\n  \"phone\": \"+62 812 3456 7890\",\n  \"username\": \"emilys\",\n  \"image\": \"https://dummyjson.com/icon/emilys/128\",\n  \"address\": {\n    \"address\": \"626 Main Street\",\n    \"city\": \"Phoenix\",\n    \"state\": \"Mississippi\",\n    \"postalCode\": \"29112\",\n    \"country\": \"United States\"\n  },\n  \"company\": {\n    \"name\": \"Dooley, Kozey and Cronin\",\n    \"department\": \"Engineering\",\n    \"title\": \"Software Engineer\"\n  },\n  \"role\": \"admin\"\n}"
+            }
+          },
+          {
+            "id": "req_mvkgawdt_7",
+            "params": [],
+            "headers": [
+              {
+                "id": "kv_mvkgawdt_6",
+                "key": "Content-Type",
+                "value": "application/json",
+                "description": "",
+                "enabled": true
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{token}}",
+              "username": "",
+              "password": "",
+              "apiKeyName": "",
+              "apiKeyValue": ""
+            },
+            "body": {
+              "format": "json",
+              "content": "{\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"email\": \"john.doe@example.com\"\n}",
+              "form": []
+            },
+            "mock": true,
+            "name": "Update Profile",
+            "method": "PUT",
+            "url": "{{base_url}}/users/1",
+            "mockResponse": {
+              "status": 200,
+              "statusText": "OK",
+              "headers": [
+                {
+                  "key": "content-type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "x-powered-by",
+                  "value": "Ozai Mock Server"
+                },
+                {
+                  "key": "cache-control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"id\": 1,\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"email\": \"john.doe@example.com\",\n  \"username\": \"johndoe\",\n  \"updatedAt\": \"2026-10-23T08:12:44.000Z\"\n}"
+            }
+          }
+        ]
+      },
+      {
+        "id": "col_mvkgawe6_32",
+        "name": "Product API",
+        "requests": [
+          {
+            "id": "req_mvkgawdt_12",
+            "params": [
+              {
+                "id": "kv_mvkgawdt_8",
+                "key": "limit",
+                "value": "10",
+                "description": "Items per page",
+                "enabled": true
+              },
+              {
+                "id": "kv_mvkgawdt_9",
+                "key": "skip",
+                "value": "0",
+                "description": "Pagination offset",
+                "enabled": true
+              },
+              {
+                "id": "kv_mvkgawdt_10",
+                "key": "select",
+                "value": "title,price,stock",
+                "description": "Fields to return",
+                "enabled": true
+              }
+            ],
+            "headers": [
+              {
+                "id": "kv_mvkgawdt_11",
+                "key": "Accept",
+                "value": "application/json",
+                "description": "",
+                "enabled": true
+              }
+            ],
+            "auth": {
+              "type": "none",
+              "token": "",
+              "username": "",
+              "password": "",
+              "apiKeyName": "",
+              "apiKeyValue": ""
+            },
+            "body": {
+              "format": "none",
+              "content": "",
+              "form": []
+            },
+            "mock": true,
+            "name": "Get Products",
+            "method": "GET",
+            "url": "{{base_url}}/products",
+            "mockResponse": {
+              "status": 200,
+              "statusText": "OK",
+              "headers": [
+                {
+                  "key": "content-type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "x-powered-by",
+                  "value": "Ozai Mock Server"
+                },
+                {
+                  "key": "cache-control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"products\": [\n    {\n      \"id\": 1,\n      \"title\": \"Essence Mascara Lash Princess\",\n      \"price\": 9.99,\n      \"stock\": 5,\n      \"category\": \"beauty\",\n      \"rating\": 4.94,\n      \"thumbnail\": \"https://cdn.dummyjson.com/products/images/beauty/Essence%20Mascara%20Lash%20Princess/thumbnail.png\"\n    },\n    {\n      \"id\": 2,\n      \"title\": \"Eyeshadow Palette with Mirror\",\n      \"price\": 19.99,\n      \"stock\": 44,\n      \"category\": \"beauty\",\n      \"rating\": 3.28,\n      \"thumbnail\": \"https://cdn.dummyjson.com/products/images/beauty/Eyeshadow%20Palette%20with%20Mirror/thumbnail.png\"\n    },\n    {\n      \"id\": 3,\n      \"title\": \"Powder Canister\",\n      \"price\": 14.99,\n      \"stock\": 59,\n      \"category\": \"beauty\",\n      \"rating\": 3.82,\n      \"thumbnail\": \"https://cdn.dummyjson.com/products/images/beauty/Powder%20Canister/thumbnail.png\"\n    }\n  ],\n  \"total\": 194,\n  \"skip\": 0,\n  \"limit\": 10\n}"
+            }
+          },
+          {
+            "id": "req_mvkgawdt_14",
+            "params": [],
+            "headers": [
+              {
+                "id": "kv_mvkgawdt_13",
+                "key": "Accept",
+                "value": "application/json",
+                "description": "",
+                "enabled": true
+              }
+            ],
+            "auth": {
+              "type": "none",
+              "token": "",
+              "username": "",
+              "password": "",
+              "apiKeyName": "",
+              "apiKeyValue": ""
+            },
+            "body": {
+              "format": "none",
+              "content": "",
+              "form": []
+            },
+            "mock": true,
+            "name": "Get Product Detail",
+            "method": "GET",
+            "url": "{{base_url}}/products/1",
+            "mockResponse": {
+              "status": 200,
+              "statusText": "OK",
+              "headers": [
+                {
+                  "key": "content-type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "x-powered-by",
+                  "value": "Ozai Mock Server"
+                },
+                {
+                  "key": "cache-control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"id\": 1,\n  \"title\": \"Essence Mascara Lash Princess\",\n  \"description\": \"The Essence Mascara Lash Princess is a popular mascara known for its volumizing and lengthening effects.\",\n  \"category\": \"beauty\",\n  \"price\": 9.99,\n  \"discountPercentage\": 10.48,\n  \"rating\": 4.94,\n  \"stock\": 5,\n  \"tags\": [\n    \"beauty\",\n    \"mascara\"\n  ],\n  \"brand\": \"Essence\",\n  \"sku\": \"BEA-ESS-ESS-001\",\n  \"weight\": 4,\n  \"dimensions\": {\n    \"width\": 15.14,\n    \"height\": 13.08,\n    \"depth\": 22.99\n  },\n  \"warrantyInformation\": \"1 week warranty\",\n  \"shippingInformation\": \"Ships in 3-5 business days\",\n  \"availabilityStatus\": \"Low Stock\",\n  \"returnPolicy\": \"No return policy\",\n  \"minimumOrderQuantity\": 1,\n  \"reviews\": [\n    {\n      \"rating\": 5,\n      \"comment\": \"Very satisfied!\",\n      \"reviewerName\": \"Elena Baker\",\n      \"date\": \"2026-05-14\"\n    },\n    {\n      \"rating\": 4,\n      \"comment\": \"Great product!\",\n      \"reviewerName\": \"Mariah Garner\",\n      \"date\": \"2026-07-02\"\n    }\n  ]\n}"
+            }
+          },
+          {
+            "id": "req_mvkgawdt_16",
+            "params": [],
+            "headers": [
+              {
+                "id": "kv_mvkgawdt_15",
+                "key": "Content-Type",
+                "value": "application/json",
+                "description": "",
+                "enabled": true
+              }
+            ],
+            "auth": {
+              "type": "none",
+              "token": "",
+              "username": "",
+              "password": "",
+              "apiKeyName": "",
+              "apiKeyValue": ""
+            },
+            "body": {
+              "format": "json",
+              "content": "{\n  \"title\": \"Wireless Noise-Cancelling Headphones\",\n  \"price\": 129.99,\n  \"category\": \"audio\",\n  \"stock\": 42\n}",
+              "form": []
+            },
+            "mock": true,
+            "name": "Create Product",
+            "method": "POST",
+            "url": "{{base_url}}/products/add",
+            "mockResponse": {
+              "status": 201,
+              "statusText": "Created",
+              "headers": [
+                {
+                  "key": "content-type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "x-powered-by",
+                  "value": "Ozai Mock Server"
+                },
+                {
+                  "key": "cache-control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"id\": 195,\n  \"title\": \"Wireless Noise-Cancelling Headphones\",\n  \"price\": 129.99,\n  \"category\": \"audio\",\n  \"stock\": 42,\n  \"createdAt\": \"2026-10-23T08:15:02.000Z\"\n}"
+            }
+          }
+        ]
+      },
+      {
+        "id": "col_mvkgawe6_33",
+        "name": "Payment API",
+        "requests": [
+          {
+            "id": "req_mvkgawdt_19",
+            "params": [],
+            "headers": [
+              {
+                "id": "kv_mvkgawdt_17",
+                "key": "Content-Type",
+                "value": "application/json",
+                "description": "",
+                "enabled": true
+              },
+              {
+                "id": "kv_mvkgawdt_18",
+                "key": "Idempotency-Key",
+                "value": "ord_8842_pay_01",
+                "description": "",
+                "enabled": true
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{token}}",
+              "username": "",
+              "password": "",
+              "apiKeyName": "",
+              "apiKeyValue": ""
+            },
+            "body": {
+              "format": "json",
+              "content": "{\n  \"amount\": 149000,\n  \"currency\": \"IDR\",\n  \"method\": \"card\",\n  \"orderId\": \"ord_8842\"\n}",
+              "form": []
+            },
+            "mock": true,
+            "name": "Create Payment",
+            "method": "POST",
+            "url": "https://api.ozai.dev/v1/payments",
+            "mockResponse": {
+              "status": 201,
+              "statusText": "Created",
+              "headers": [
+                {
+                  "key": "content-type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "x-powered-by",
+                  "value": "Ozai Mock Server"
+                },
+                {
+                  "key": "cache-control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"id\": \"pay_9f2c1a7d\",\n  \"object\": \"payment\",\n  \"status\": \"requires_confirmation\",\n  \"amount\": 149000,\n  \"currency\": \"IDR\",\n  \"method\": \"card\",\n  \"orderId\": \"ord_8842\",\n  \"clientSecret\": \"pi_9f2c1a7d_secret_demo\",\n  \"createdAt\": \"2026-10-23T08:20:11.000Z\",\n  \"nextAction\": {\n    \"type\": \"redirect\",\n    \"url\": \"https://pay.ozai.dev/checkout/9f2c1a7d\"\n  }\n}"
+            }
+          },
+          {
+            "id": "req_mvkgawdt_21",
+            "params": [],
+            "headers": [
+              {
+                "id": "kv_mvkgawdt_20",
+                "key": "Accept",
+                "value": "application/json",
+                "description": "",
+                "enabled": true
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{token}}",
+              "username": "",
+              "password": "",
+              "apiKeyName": "",
+              "apiKeyValue": ""
+            },
+            "body": {
+              "format": "none",
+              "content": "",
+              "form": []
+            },
+            "mock": true,
+            "name": "Payment Status",
+            "method": "GET",
+            "url": "https://api.ozai.dev/v1/payments/pay_9f2c1a7d",
+            "mockResponse": {
+              "status": 200,
+              "statusText": "OK",
+              "headers": [
+                {
+                  "key": "content-type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "x-powered-by",
+                  "value": "Ozai Mock Server"
+                },
+                {
+                  "key": "cache-control",
+                  "value": "no-store"
+                }
+              ],
+              "body": "{\n  \"id\": \"pay_9f2c1a7d\",\n  \"status\": \"succeeded\",\n  \"amount\": 149000,\n  \"currency\": \"IDR\",\n  \"method\": \"card\",\n  \"card\": {\n    \"brand\": \"visa\",\n    \"last4\": \"4242\",\n    \"expMonth\": 12,\n    \"expYear\": 2028\n  },\n  \"orderId\": \"ord_8842\",\n  \"paidAt\": \"2026-10-23T08:20:26.000Z\",\n  \"fee\": 4360,\n  \"net\": 144640\n}"
+            }
+          }
+        ]
+      }
+    ],
+    "environments": [
+      {
+        "id": "env_mvkgawe6_28",
+        "name": "Development",
+        "variables": [
+          {
+            "id": "kv_mvkgawe6_29",
+            "key": "base_url",
+            "value": "https://dummyjson.com",
+            "description": "Base URL for demo endpoints",
+            "enabled": true
+          },
+          {
+            "id": "kv_mvkgawe6_30",
+            "key": "token",
+            "value": "demo-token",
+            "description": "Bearer token used by protected requests",
+            "enabled": true
+          }
+        ]
+      }
+    ],
+    "activeEnvironmentId": "env_mvkgawe6_28",
+    "workspaceName": "My Workspace"
+  }
+}

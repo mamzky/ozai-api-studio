@@ -1,14 +1,23 @@
 import type {
   ApiRequest,
+  AppData,
   AuthConfig,
   BodyConfig,
   BodyFormat,
   Collection,
   Environment,
   EnvVariable,
-  KeyValue
+  KeyValue,
+  MockResponse
 } from '../types/api'
 import { uid } from '../lib/format'
+import seed from './seedWorkspace.json'
+
+/**
+ * Seed workspace exported from the web app and imported into the desktop app.
+ * Keeping it as JSON makes it easy to refresh the demo collections later.
+ */
+const seedWorkspace = (seed as unknown as { workspace: AppData }).workspace
 
 export const emptyAuth = (): AuthConfig => ({
   type: 'none',
@@ -48,14 +57,47 @@ export function createEnvironment(name = 'New Environment'): Environment {
   }
 }
 
+const cloneKeyValues = (rows: KeyValue[] | undefined): KeyValue[] =>
+  (rows ?? []).map((row) => ({ ...row, id: uid('kv') }))
+
+const cloneMockResponse = (mock: MockResponse | undefined): MockResponse | undefined =>
+  mock
+    ? {
+        ...mock,
+        headers: mock.headers.map((header) => ({ ...header }))
+      }
+    : undefined
+
+const cloneRequest = (request: ApiRequest): ApiRequest => ({
+  ...request,
+  id: uid('req'),
+  params: cloneKeyValues(request.params),
+  headers: cloneKeyValues(request.headers),
+  auth: { ...emptyAuth(), ...request.auth },
+  body: {
+    format: request.body?.format ?? 'none',
+    content: request.body?.content ?? ''
+  },
+  mock: request.mock ?? Boolean(request.mockResponse),
+  mockResponse: cloneMockResponse(request.mockResponse)
+})
+
 export function createDefaultEnvironments(): Environment[] {
+  const seeded = (seedWorkspace.environments ?? []).map((environment) => ({
+    id: uid('env'),
+    name: environment.name,
+    variables: cloneKeyValues(environment.variables)
+  }))
+
+  if (seeded.length > 0) return seeded
+
   return [
     {
       id: uid('env'),
       name: 'Development',
       variables: [
-        envVar('base_url', 'https://jsonplaceholder.typicode.com'),
-        envVar('token', '')
+        envVar('base_url', 'https://dummyjson.com'),
+        envVar('token', 'demo-token')
       ]
     }
   ]
@@ -77,34 +119,42 @@ export function createRequest(partial: Partial<ApiRequest> = {}): ApiRequest {
 }
 
 export function createDefaultCollections(): Collection[] {
-  return [
-    {
-      id: uid('col'),
-      name: 'My Collection',
-      requests: [
-        createRequest({
-          name: 'Get Users',
-          method: 'GET',
-          url: '{{base_url}}/users'
-        }),
-        createRequest({
-          name: 'Get User Detail',
-          method: 'GET',
-          url: '{{base_url}}/users/1'
-        }),
-        createRequest({
-          name: 'Create User',
-          method: 'POST',
-          url: '{{base_url}}/users',
-          headers: [kv('Content-Type', 'application/json')],
-          body: {
-            format: 'json',
-            content: '{\n  "name": "John Doe",\n  "email": "john@example.com"\n}'
-          }
-        })
-      ]
-    }
-  ]
+  if (!Array.isArray(seedWorkspace.collections) || seedWorkspace.collections.length === 0) {
+    return [
+      {
+        id: uid('col'),
+        name: 'My Collection',
+        requests: [
+          createRequest({
+            name: 'Get Users',
+            method: 'GET',
+            url: '{{base_url}}/users'
+          }),
+          createRequest({
+            name: 'Get User Detail',
+            method: 'GET',
+            url: '{{base_url}}/users/1'
+          }),
+          createRequest({
+            name: 'Create User',
+            method: 'POST',
+            url: '{{base_url}}/users',
+            headers: [kv('Content-Type', 'application/json')],
+            body: {
+              format: 'json',
+              content: '{\n  "name": "John Doe",\n  "email": "john@example.com"\n}'
+            }
+          })
+        ]
+      }
+    ]
+  }
+
+  return seedWorkspace.collections.map((collection) => ({
+    id: uid('col'),
+    name: collection.name,
+    requests: collection.requests.map(cloneRequest)
+  }))
 }
 
 export function findRequest(
