@@ -311,15 +311,26 @@ export default function App() {
     [collections, setCollections]
   )
 
+  const closeCollection = useCallback((collectionId: string) => {
+    setExpanded((prev) => ({ ...prev, [collectionId]: false }))
+    setSelectedCollectionId((current) => (current === collectionId ? null : current))
+  }, [])
+
   const handleClearCollection = useCallback(
     (collectionId: string) => {
       const target = collections.find((collection) => collection.id === collectionId)
-      if (!target || target.requests.length === 0) return
+      if (!target) return
+
+      if (target.requests.length === 0) {
+        closeCollection(collectionId)
+        return
+      }
+
       const requestIds = new Set(target.requests.map((request) => request.id))
       setConfirm({
-        title: 'Clear Collection?',
-        message: `Remove all ${target.requests.length} request(s) from "${target.name}"? The collection itself will stay.`,
-        confirmLabel: 'Clear',
+        title: 'Close & Clear Collection?',
+        message: `Remove all ${target.requests.length} request(s) from "${target.name}" and close it? The collection will stay in the sidebar.`,
+        confirmLabel: 'Close & Clear',
         onConfirm: () => {
           setCollections((prev) =>
             prev.map((collection) =>
@@ -337,11 +348,12 @@ export default function App() {
             return next
           })
           setSelectedRequestId((current) => (current && requestIds.has(current) ? null : current))
+          closeCollection(collectionId)
           setConfirm(null)
         }
       })
     },
-    [collections, setCollections]
+    [closeCollection, collections, setCollections]
   )
 
   const openCollectionMenu = useCallback(
@@ -349,25 +361,18 @@ export default function App() {
       event.preventDefault()
       event.stopPropagation()
       setSelectedCollectionId(collectionId)
-      const target = collections.find((collection) => collection.id === collectionId)
-      const requestCount = target?.requests.length ?? 0
       setMenu({
         x: event.clientX,
         y: event.clientY,
         items: [
           { label: 'New Request', onSelect: () => handleNewRequest(collectionId) },
           { label: 'Rename', onSelect: () => setRenaming({ type: 'collection', id: collectionId }) },
-          {
-            label: 'Clear Requests',
-            danger: true,
-            disabled: requestCount === 0,
-            onSelect: () => handleClearCollection(collectionId)
-          },
+          { label: 'Close & Clear', danger: true, onSelect: () => handleClearCollection(collectionId) },
           { label: 'Delete', danger: true, onSelect: () => handleDeleteCollection(collectionId) }
         ]
       })
     },
-    [collections, handleClearCollection, handleDeleteCollection, handleNewRequest]
+    [handleClearCollection, handleDeleteCollection, handleNewRequest]
   )
 
   const openRequestMenu = useCallback(
