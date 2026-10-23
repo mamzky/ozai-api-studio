@@ -1,6 +1,6 @@
 import { app, shell, BrowserWindow, ipcMain } from 'electron'
 import { join } from 'path'
-import { promises as fs } from 'fs'
+import { existsSync, promises as fs } from 'fs'
 import { uploadWorkspace, pullWorkspace, listCommits, testConnection } from './supabase'
 import type {
   AppData,
@@ -36,6 +36,27 @@ const STATUS_TEXT: Record<number, string> = {
 const storageFile = (): string => join(app.getPath('userData'), 'api-studio.json')
 
 const historyFile = (): string => join(app.getPath('userData'), 'api-studio-history.json')
+
+const LEGACY_APP_NAME = 'api-studio'
+
+async function migrateLegacyData(): Promise<void> {
+  try {
+    const legacyDir = join(app.getPath('appData'), LEGACY_APP_NAME)
+    const currentDir = app.getPath('userData')
+    if (legacyDir === currentDir) return
+    if (!existsSync(legacyDir)) return
+
+    await fs.mkdir(currentDir, { recursive: true })
+    for (const name of ['api-studio.json', 'api-studio-history.json']) {
+      const destination = join(currentDir, name)
+      if (existsSync(destination)) continue
+      const source = join(legacyDir, name)
+      if (existsSync(source)) await fs.copyFile(source, destination)
+    }
+  } catch {
+    // ignore migration errors
+  }
+}
 
 async function runRequest(payload: HttpRequestPayload): Promise<SendResult> {
   let url: URL
@@ -194,7 +215,8 @@ function createWindow(): void {
   }
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
+  await migrateLegacyData()
   registerIpc()
   createWindow()
 

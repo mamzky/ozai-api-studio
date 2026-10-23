@@ -10,66 +10,118 @@ import type {
 
 const SSL_CONFIG = { rejectUnauthorized: false }
 const WORKSPACE_ID = 'default'
-const CONNECT_TIMEOUT = 12000
+const CONNECT_TIMEOUT = 5000
+const CONNECT_CONCURRENCY = 10
 
+const POOLER_PREFIXES = ['aws-0', 'aws-1']
+
+// Region pooler Supabase. Host yang tidak ada gagal cepat (NXDOMAIN),
+// jadi aman discan paralel.
 const POOLER_REGIONS = [
-  'aws-0-ap-south-1',
-  'aws-1-ap-south-1',
-  'aws-0-ap-southeast-1',
-  'aws-1-ap-southeast-1',
-  'aws-0-ap-southeast-2',
-  'aws-1-ap-southeast-2',
-  'aws-0-ap-northeast-1',
-  'aws-1-ap-northeast-1',
-  'aws-0-ap-northeast-2',
-  'aws-0-us-east-1',
-  'aws-1-us-east-1',
-  'aws-0-us-east-2',
-  'aws-0-us-west-1',
-  'aws-1-us-west-1',
-  'aws-0-us-west-2',
-  'aws-0-eu-central-1',
-  'aws-1-eu-central-1',
-  'aws-0-eu-west-1',
-  'aws-1-eu-west-1',
-  'aws-0-eu-west-2',
-  'aws-0-eu-west-3',
-  'aws-0-eu-north-1',
-  'aws-0-sa-east-1',
-  'aws-0-ca-central-1'
+  'ap-south-1',
+  'ap-southeast-1',
+  'ap-southeast-2',
+  'ap-northeast-1',
+  'ap-northeast-2',
+  'us-east-1',
+  'us-east-2',
+  'us-west-1',
+  'us-west-2',
+  'eu-central-1',
+  'eu-central-2',
+  'eu-west-1',
+  'eu-west-2',
+  'eu-west-3',
+  'eu-north-1',
+  'sa-east-1',
+  'ca-central-1'
 ]
 
 const workingCache = new Map<string, { host: string; port: number; user: string }>()
+
+type FailureKind = 'auth' | 'notfound' | 'network' | 'other'
+
+interface AttemptFailure {
+  config: ClientConfig
+  error: unknown
+  kind: FailureKind
+}
+
+class SyncConnectError extends Error {
+  readonly syncCode: 'offline' | 'auth' | 'invalid' | 'unknown'
+
+  constructor(syncCode: 'offline' | 'auth' | 'invalid' | 'unknown', message: string) {
+    super(message)
+    this.name = 'SyncConnectError'
+    this.syncCode = syncCode
+  }
+}
+
+interface PoolerBase {
+  password?: ClientConfig['password']
+  database?: ClientConfig['database']
+  ssl: typeof SSL_CONFIG
+  connectionTimeoutMillis: number
+}
+
+function isConnectionString(value: string): boolean {
+  return /^postgres(ql)?:\/\//i.test((value || '').trim())
+}
 
 function parseRef(input: string): string {
   const value = (input || '').trim()
   if (!value) throw new Error('Supabase URL kosong.')
   const ref = value
-    .replace(/^https?:\/\//i, '')
-    .replace(/\/.*$/, '')
+    .replace(/^[a-z]+:\/\//i, '')
+    .replace(/^[^@/]*@/, '')
+    .split(/[/?#]/)[0]
+    .replace(/:\d+$/, '')
     .replace(/\.supabase\.(co|in|net).*$/i, '')
+    .replace(/^db\./i, '')
     .trim()
-  if (!ref || !/^[a-z0-9-]+$/i.test(ref)) {
+    .toLowerCase()
+  if (!ref || !/^[a-z0-9-]+$/.test(ref)) {
     throw new Error('URL Supabase tidak valid. Contoh: https://abcdefgh.supabase.co')
   }
   return ref
+}
+
+interface ConnectionParts {
+  config: ClientConfig
+  ref: string | null
+  kind: 'direct' | 'pooler' | 'other'
+}
+
+function parseConnectionString(value: string, password: string): ConnectionParts {
+  const url = new URL(value)
+  const host = url.hostname
+  const user = decodeURIComponent(url.username || 'postgres')
+  const config: ClientConfig = {
+    host,
+    port: Number(url.port || 5432),
+    user,
+    password: password || decodeURIComponent(url.password || ''),
+    database: decodeURIComponent(url.pathname.replace(/^\//, '')) || 'postgres',
+    ssl: SSL_CONFIG,
+    connectionTimeoutMillis: CONNECT_TIMEOUT
+  }
+
+  const direct = host.match(/^db\.([a-z0-9-]+)\.supabase\.(co|in|net)$/i)
+  const pooler = host.match(/^([a-z0-9-]+)\.pooler\.supabase\.com$/i)
+
+  let ref: string | null = direct?.[1]?.toLowerCase() ?? null
+  if (!ref && pooler && /^postgres\.[a-z0-9-]+$/i.test(user)) ref = user.split('.')[1].toLowerCase()
+
+  const kind: ConnectionParts['kind'] = direct ? 'direct' : pooler ? 'pooler' : 'other'
+  return { config, ref, kind }
 }
 
 export function buildConnectionConfig(input: string, password: string): ClientConfig {
   const value = (input || '').trim()
   if (!value) throw new Error('Supabase URL kosong.')
 
-  if (value.startsWith('postgres://') || value.startsWith('postgresql://')) {
-    const url = new URL(value)
-    return {
-      host: url.hostname,
-      port: Number(url.port || 5432),
-      user: decodeURIComponent(url.username || 'postgres'),
-      password: password || decodeURIComponent(url.password || ''),
-      database: url.pathname.replace(/^\//, '') || 'postgres',
-      ssl: SSL_CONFIG,
-      connectionTimeoutMillis: CONNECT_TIMEOUT
-    }
+  if (isConnectionString(value)) {
+    return parseConnectionString(value, password).config
   }
 
   const ref = parseRef(value)
@@ -84,15 +136,68 @@ export function buildConnectionConfig(input: string, password: string): ClientCo
   }
 }
 
-function candidateConfigs(input: string, password: string): ClientConfig[] {
+function poolerConfigs(ref: string, base: PoolerBase, preferredHost?: string): ClientConfig[] {
+  const configs: ClientConfig[] = []
+  const seen = new Set<string>()
+  const user = `postgres.${ref}`
+
+  const push = (host: string) => {
+    const key = `${host}|${user}`
+    if (seen.has(key)) return
+    seen.add(key)
+    configs.push({ ...base, host, port: 5432, user })
+  }
+
+  if (preferredHost) push(preferredHost)
+  for (const prefix of POOLER_PREFIXES) {
+    for (const region of POOLER_REGIONS) push(`${prefix}-${region}.pooler.supabase.com`)
+  }
+  return configs
+}
+
+function dedupe(configs: ClientConfig[]): ClientConfig[] {
+  const seen = new Set<string>()
+  return configs.filter((config) => {
+    const key = `${config.host}|${config.port}|${config.user}`
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
+}
+
+function candidateConfigs(input: string, password: string): { configs: ClientConfig[]; ref: string | null } {
   const value = (input || '').trim()
-  if (value.startsWith('postgres://') || value.startsWith('postgresql://')) {
-    return [buildConnectionConfig(value, password)]
+  if (!value) throw new Error('Supabase URL kosong.')
+
+  if (isConnectionString(value)) {
+    const parsed = parseConnectionString(value, password)
+    const configs: ClientConfig[] = [parsed.config]
+    const ref = parsed.ref
+
+    if (ref) {
+      const base: PoolerBase = {
+        password: parsed.config.password,
+        database: parsed.config.database,
+        ssl: SSL_CONFIG,
+        connectionTimeoutMillis: CONNECT_TIMEOUT
+      }
+      const cached = workingCache.get(ref)
+      if (cached) configs.push({ ...base, ...cached })
+
+      const expectedUser = `postgres.${ref}`
+      const userIsDefault = parsed.config.user === 'postgres' || parsed.config.user === expectedUser
+      // Direct host Supabase hanya IPv6. Kalau jaringan tidak punya IPv6,
+      // langsung fallback ke pooler yang tetap IPv4.
+      if (userIsDefault && (parsed.kind === 'direct' || parsed.kind === 'pooler')) {
+        configs.push(...poolerConfigs(ref, base, parsed.kind === 'pooler' ? parsed.config.host : undefined))
+      }
+    }
+
+    return { configs: dedupe(configs), ref }
   }
 
   const ref = parseRef(value)
-  const base: ClientConfig = {
-    port: 5432,
+  const base: PoolerBase = {
     password,
     database: 'postgres',
     ssl: SSL_CONFIG,
@@ -101,39 +206,118 @@ function candidateConfigs(input: string, password: string): ClientConfig[] {
 
   const configs: ClientConfig[] = []
   const cached = workingCache.get(ref)
-  if (cached) configs.push({ ...base, host: cached.host, port: cached.port, user: cached.user })
+  if (cached) configs.push({ ...base, ...cached })
+  configs.push({ ...base, host: `db.${ref}.supabase.co`, port: 5432, user: 'postgres' })
+  configs.push(...poolerConfigs(ref, base))
 
-  if (!cached || cached.host !== `db.${ref}.supabase.co`) {
-    configs.push({ ...base, host: `db.${ref}.supabase.co`, user: 'postgres' })
+  return { configs: dedupe(configs), ref }
+}
+
+function failureKind(error: unknown): FailureKind {
+  const err = error as { code?: string; message?: string }
+  const code = err?.code ?? ''
+  const raw = err?.message ?? ''
+
+  if (['28P01', '28000', '08P01'].includes(code)) return 'auth'
+  if (code === 'XX000' && /not found|tenant/i.test(raw)) return 'notfound'
+  if (['ENOTFOUND', 'ECONNREFUSED', 'ETIMEDOUT', 'ENETUNREACH', 'EHOSTUNREACH', 'EAI_AGAIN', 'ECONNRESET', 'EPIPE'].includes(code)) {
+    return 'network'
+  }
+  if (/timeout|getaddrinfo|network|socket|connect/i.test(raw)) return 'network'
+  return 'other'
+}
+
+function errorCode(error: unknown): string {
+  return (error as { code?: string })?.code ?? ''
+}
+
+function errorMessage(error: unknown): string {
+  return (error as { message?: string })?.message ?? 'Unknown error'
+}
+
+function buildConnectError(failures: AttemptFailure[]): SyncConnectError {
+  if (failures.length === 0) {
+    return new SyncConnectError('unknown', 'Tidak ada endpoint database yang bisa dicoba.')
   }
 
-  for (const region of POOLER_REGIONS) {
-    const host = `${region}.pooler.supabase.com`
-    if (cached && cached.host === host) continue
-    configs.push({ ...base, host, user: `postgres.${ref}` })
+  const auth = failures.find((item) => item.kind === 'auth')
+  if (auth) return new SyncConnectError('auth', `Password database salah. (${errorCode(auth.error) || '28P01'})`)
+
+  const notFound = failures.find((item) => item.kind === 'notfound')
+  if (notFound) {
+    return new SyncConnectError(
+      'invalid',
+      `Project Supabase tidak ditemukan di pooler (${failures.length} endpoint dicoba). ` +
+        'Cek lagi project ref/URL-nya.'
+    )
   }
 
-  return configs
+  const network = failures.find((item) => item.kind === 'network')
+  if (network) {
+    const code = errorCode(network.error)
+    const detail = code ? ` (${code})` : ''
+    const directFailed = failures.some(
+      (item) => item.kind === 'network' && /^db\./i.test(item.config.host ?? '')
+    )
+    const ipv6Note = directFailed
+      ? '\n\nKoneksi langsung db.<project>.supabase.co hanya tersedia lewat IPv6, dan jaringan ini belum punya route IPv6.'
+      : ''
+    return new SyncConnectError(
+      'offline',
+      `Cannot sync at the moment. Tidak bisa menjangkau database Supabase${detail} (${failures.length} endpoint dicoba).` +
+        ipv6Note
+    )
+  }
+
+  const other = failures[0]
+  return new SyncConnectError('unknown', errorMessage(other.error))
 }
 
 async function connectFirst(configs: ClientConfig[], ref: string | null): Promise<Client> {
-  let lastError: unknown
+  let next = 0
+  const state: { client: Client | null; config: ClientConfig | null } = { client: null, config: null }
+  const failures: AttemptFailure[] = []
 
-  for (const config of configs) {
-    const client = new Client(config)
-    try {
-      await client.connect()
-      if (ref) workingCache.set(ref, { host: config.host!, port: config.port!, user: config.user! })
-      return client
-    } catch (error) {
-      lastError = error
-      await client.end().catch(() => undefined)
-      const code = (error as { code?: string })?.code
-      if (code === '28P01' || code === '28000') throw error
+  const worker = async (): Promise<void> => {
+    while (!state.client) {
+      const index = next++
+      if (index >= configs.length) return
+      const config = configs[index]
+      const client = new Client(config)
+      try {
+        await client.connect()
+        if (state.client) {
+          await client.end().catch(() => undefined)
+          return
+        }
+        state.client = client
+        state.config = config
+        return
+      } catch (error) {
+        await client.end().catch(() => undefined)
+        const failure: AttemptFailure = { config, error, kind: failureKind(error) }
+        failures.push(failure)
+        // Password salah sudah pasti, tidak perlu lanjut scan region.
+        if (failure.kind === 'auth') {
+          next = configs.length
+          return
+        }
+      }
     }
   }
 
-  throw lastError
+  const workers = Math.min(CONNECT_CONCURRENCY, configs.length)
+  await Promise.all(Array.from({ length: workers }, () => worker()))
+
+  if (state.client) {
+    const { host, port, user } = state.config ?? {}
+    if (ref && host && port && user && typeof user === 'string') {
+      workingCache.set(ref, { host, port, user })
+    }
+    return state.client
+  }
+
+  throw buildConnectError(failures)
 }
 
 const SCHEMA_SQL = `
@@ -154,6 +338,10 @@ create table if not exists studio_commits (
 `
 
 function classifyError(error: unknown): { code: 'offline' | 'auth' | 'invalid' | 'unknown'; message: string } {
+  if (error instanceof SyncConnectError) {
+    return { code: error.syncCode, message: error.message }
+  }
+
   const err = error as { code?: string; message?: string }
   const code = err?.code ?? ''
   const raw = err?.message ?? 'Unknown error'
@@ -174,18 +362,23 @@ function classifyError(error: unknown): { code: 'offline' | 'auth' | 'invalid' |
   return { code: 'unknown', message: raw }
 }
 
+function isSupabaseInput(input: string): boolean {
+  const value = (input || '').trim().toLowerCase()
+  if (!isConnectionString(value)) return true
+  return /\.supabase\.(co|in|net)[:/]/.test(value) || /\.pooler\.supabase\.com[:/]/.test(value)
+}
+
 function toSyncError(error: unknown, url: string): SyncError {
   const classified = classifyError(error)
-  const isConnString = url.trim().toLowerCase().startsWith('postgres')
-  if (classified.code === 'offline' && !isConnString) {
-    return {
-      ok: false,
-      code: 'offline',
-      error:
-        `${classified.message}\n\nKalau tetap gagal, ambil connection string "Session pooler" ` +
-        `(Supabase → Settings → Database → Connection string) lalu paste di field URL.`
-    }
+  const needsHint = classified.code === 'offline' || classified.code === 'invalid'
+
+  if (needsHint && isSupabaseInput(url) && !classified.message.includes('Session pooler')) {
+    const hint =
+      'Tip: Supabase → Project Settings → Database → Connection string, pilih "Session pooler", ' +
+      'lalu paste string lengkapnya ke field URL. Koneksi direct db.<project>.supabase.co hanya jalan di jaringan ber-IPv6.'
+    return { ok: false, code: classified.code, error: `${classified.message}\n\n${hint}` }
   }
+
   return { ok: false, code: classified.code, error: classified.message }
 }
 
@@ -194,8 +387,7 @@ async function withClient<T>(
   password: string,
   run: (client: Client) => Promise<T>
 ): Promise<T> {
-  const configs = candidateConfigs(url, password)
-  const ref = url.trim().toLowerCase().startsWith('postgres') ? null : parseRef(url)
+  const { configs, ref } = candidateConfigs(url, password)
   const client = await connectFirst(configs, ref)
   try {
     return await run(client)

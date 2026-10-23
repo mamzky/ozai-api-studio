@@ -1,7 +1,9 @@
+import { useState } from 'react'
 import Dropdown from './Dropdown'
 import RequestTabs from './RequestTabs'
 import HighlightedInput from './HighlightedInput'
 import { HTTP_METHODS, METHOD_STYLES } from '../lib/methods'
+import { isCurlCommand, parseCurl } from '../lib/curl'
 import { Send, Spinner } from './Icons'
 import type { ApiRequest, EnvVariable, HttpMethod } from '../types/api'
 
@@ -15,6 +17,25 @@ interface RequestEditorProps {
 
 export default function RequestEditor({ request, onChange, onSend, sending, environmentVariables }: RequestEditorProps) {
   const style = METHOD_STYLES[request.method]
+  const [curlError, setCurlError] = useState<string | null>(null)
+
+  const applyCurl = (text: string): boolean => {
+    if (!isCurlCommand(text)) return false
+    try {
+      const parsed = parseCurl(text)
+      onChange({
+        url: parsed.url,
+        method: parsed.method,
+        headers: parsed.headers,
+        body: parsed.body,
+        auth: parsed.auth
+      })
+      setCurlError(null)
+    } catch (error) {
+      setCurlError((error as Error).message)
+    }
+    return true
+  }
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -41,11 +62,27 @@ export default function RequestEditor({ request, onChange, onSend, sending, envi
         <div className="relative flex-1">
           <HighlightedInput
             value={request.url}
-            onValueChange={(url) => onChange({ url })}
-            placeholder="https://api.example.com/v1/resource"
+            onValueChange={(url) => {
+              if (applyCurl(url)) return
+              setCurlError(null)
+              onChange({ url })
+            }}
+            onPaste={(event) => {
+              const text = event.clipboardData.getData('text')
+              if (!isCurlCommand(text)) return
+              event.preventDefault()
+              applyCurl(text)
+            }}
+            placeholder="URL atau paste cURL di sini"
+            title="Paste cURL untuk mengisi request otomatis"
             containerClassName="h-9 w-full rounded-md border border-studio-border bg-studio-elevated focus-within:border-studio-accent/70 focus-within:ring-2 focus-within:ring-studio-accent/20"
             contentClassName="px-3 text-xs"
           />
+          {curlError && (
+            <div className="absolute left-0 top-full z-20 mt-1 rounded-md border border-red-500/30 bg-red-500/10 px-2.5 py-1 text-2xs text-red-300 shadow-panel">
+              {curlError}
+            </div>
+          )}
         </div>
 
         <button

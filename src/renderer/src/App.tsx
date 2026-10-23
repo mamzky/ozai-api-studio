@@ -766,6 +766,7 @@ export default function App() {
           onCancel={() => setSyncMode(null)}
           onSubmit={handleSyncSubmit}
           onTest={handleSyncTest}
+          onClear={() => setSync(null)}
         />
       )}
 

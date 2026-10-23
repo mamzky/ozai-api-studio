@@ -57,7 +57,7 @@ export default function Sidebar({
         <div className="grid h-7 w-7 place-items-center rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow">
           <Bolt className="h-3.5 w-3.5" />
         </div>
-        <span className="text-sm font-semibold tracking-tight">API Studio</span>
+        <span className="text-sm font-semibold tracking-tight">Ozai API Studio</span>
       </div>
 
       <div className="border-b border-studio-border px-3 py-2.5">

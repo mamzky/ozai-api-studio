@@ -1,11 +1,11 @@
 {
-  "name": "api-studio",
+  "name": "ozai-api-studio",
   "version": "0.1.0",
-  "description": "Simple desktop API client built with Electron, React and TypeScript",
+  "description": "Ozai API Studio - simple desktop API client built with Electron, React and TypeScript",
   "//": [
     "CARA PAKAI (jalankan di terminal, dari folder project ini):",
     "  1. npm install                  -> install dependency + auto-fix signature Electron (macOS)",
-    "  2. npm run dev                  -> jalankan app mode development (hot reload), buka window API Studio",
+    "  2. npm run dev                  -> jalankan app mode development (hot reload), buka window Ozai API Studio",
     "  3. npm run build                -> build production ke folder out/",
     "  4. npm run package             -> build + bikin installer macOS (.dmg & .zip) di folder dist/",
     "  5. npm run package:win         -> build installer/zip Windows (dijalankan dari macOS juga bisa)",
@@ -16,7 +16,7 @@
     "  - Upload: kirim workspace lokal + snapshot commit ke Supabase (buat tabel otomatis).",
     "  - Import via URL: tarik workspace dari URL/connection string Supabase + DB password.",
     "  - Environment variable bertanda 'secret' TIDAK ikut di-upload (value dikosongkan).",
-    "Kalau app hasil package (.app) diblokir macOS, jalankan: xattr -dr com.apple.quarantine \"dist/mac-arm64/API Studio.app\""
+    "Kalau app hasil package (.app) diblokir macOS, jalankan: xattr -dr com.apple.quarantine \"dist/mac-arm64/Ozai API Studio.app\""
   ],
   "main": "./out/main/index.js",
   "author": "",
@@ -33,8 +33,8 @@
     "fix:electron": "node scripts/fix-electron-signature.cjs"
   },
   "build": {
-    "appId": "com.apistudio.app",
-    "productName": "API Studio",
+    "appId": "com.ozai.apistudio",
+    "productName": "Ozai API Studio",
     "directories": {
       "output": "dist"
     },

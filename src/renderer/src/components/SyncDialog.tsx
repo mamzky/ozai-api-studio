@@ -7,12 +7,13 @@ interface SyncDialogProps {
   onCancel: () => void
   onSubmit: (values: { url: string; password: string; author: string; message: string }) => Promise<string | null>
   onTest: (values: { url: string; password: string }) => Promise<{ ok: boolean; message: string }>
+  onClear: () => void
 }
 
 const inputClass = 'field w-full font-mono text-xs'
 const labelClass = 'mb-1.5 block text-xs font-medium text-studio-text'
 
-export default function SyncDialog({ mode, initial, onCancel, onSubmit, onTest }: SyncDialogProps) {
+export default function SyncDialog({ mode, initial, onCancel, onSubmit, onTest, onClear }: SyncDialogProps) {
   const [url, setUrl] = useState(initial?.url ?? '')
   const [password, setPassword] = useState(initial?.password ?? '')
   const [author, setAuthor] = useState(initial?.author ?? '')
@@ -70,6 +71,16 @@ export default function SyncDialog({ mode, initial, onCancel, onSubmit, onTest }
     setTestResult(result)
   }
 
+  const clearSaved = () => {
+    setUrl('')
+    setPassword('')
+    setAuthor('')
+    setMessage('')
+    setError(null)
+    setTestResult({ ok: true, message: 'Koneksi tersimpan sudah dihapus.' })
+    onClear()
+  }
+
   return (
     <div
       className="fixed inset-0 z-[60] grid place-items-center bg-black/60 px-4 backdrop-blur-sm"
@@ -103,7 +114,9 @@ export default function SyncDialog({ mode, initial, onCancel, onSubmit, onTest }
               className={inputClass}
             />
             <p className="mt-1 text-2xs text-studio-faint">
-              Boleh juga connection string lengkap (postgresql://...).
+              Boleh juga connection string lengkap (postgresql://...). Disarankan tipe{' '}
+              <span className="text-studio-muted">Session pooler</span> — koneksi direct (db.xxx.supabase.co) hanya
+              jalan di jaringan IPv6.
             </p>
           </div>
 
@@ -155,31 +168,44 @@ export default function SyncDialog({ mode, initial, onCancel, onSubmit, onTest }
 
         {testResult && (
           <div
-            className={`mt-3 rounded-lg border px-3 py-2 text-xs ${
+            className={`mt-3 whitespace-pre-line rounded-lg border px-3 py-2 text-xs ${
               testResult.ok
                 ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
                 : 'border-red-500/30 bg-red-500/10 text-red-300'
             }`}
           >
-            {testResult.ok ? 'Koneksi berhasil. Database bisa diakses.' : testResult.message}
+            {testResult.ok
+              ? testResult.message || 'Koneksi berhasil. Database bisa diakses.'
+              : testResult.message}
           </div>
         )}
 
         {error && (
-          <div className="mt-3 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-300">
+          <div className="mt-3 whitespace-pre-line rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-300">
             {error}
           </div>
         )}
 
         <div className="mt-5 flex items-center justify-end gap-2">
-          <button
-            type="button"
-            onClick={runTest}
-            disabled={busy || testing}
-            className="btn mr-auto border border-studio-border text-studio-muted hover:bg-studio-strong/50 hover:text-studio-text disabled:opacity-50"
-          >
-            {testing ? 'Testing…' : 'Test connection'}
-          </button>
+          <div className="mr-auto flex items-center gap-2">
+            <button
+              type="button"
+              onClick={runTest}
+              disabled={busy || testing}
+              className="btn border border-studio-border text-studio-muted hover:bg-studio-strong/50 hover:text-studio-text disabled:opacity-50"
+            >
+              {testing ? 'Testing…' : 'Test connection'}
+            </button>
+            <button
+              type="button"
+              onClick={clearSaved}
+              disabled={busy || testing}
+              title="Hapus URL & password yang tersimpan di app ini"
+              className="btn border border-studio-border text-red-400 hover:bg-red-500/15 hover:text-red-300 disabled:opacity-50"
+            >
+              Clear saved
+            </button>
+          </div>
           <button
             type="button"
             onClick={onCancel}
