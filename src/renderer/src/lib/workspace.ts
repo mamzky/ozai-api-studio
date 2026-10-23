@@ -25,9 +25,12 @@ export interface WorkspaceMergeResult {
   collections: Collection[]
   environments: Environment[]
   addedCollections: Collection[]
+  replacedCollections: Collection[]
   addedEnvironments: Environment[]
   skippedCollections: string[]
 }
+
+export type WorkspaceImportMode = 'merge' | 'replace'
 
 const METHODS: HttpMethod[] = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS']
 const AUTH_TYPES: AuthType[] = ['none', 'bearer', 'basic', 'api-key']
@@ -176,12 +179,14 @@ export function parseWorkspaceExport(text: string): ImportedWorkspace | null {
 
 /**
  * Appends collections/environments that do not already exist (matched by name).
- * Existing collections are never overwritten.
+ * With `replace`, collections with the same name are refreshed from the import
+ * while keeping their existing collection ID; other collections are untouched.
  */
 export function mergeImportedWorkspace(
   currentCollections: Collection[],
   currentEnvironments: Environment[],
-  imported: ImportedWorkspace
+  imported: ImportedWorkspace,
+  mode: WorkspaceImportMode = 'merge'
 ): WorkspaceMergeResult {
   const existingCollections = new Set(
     currentCollections.map((collection) => collection.name.trim().toLowerCase())
@@ -191,16 +196,43 @@ export function mergeImportedWorkspace(
   )
 
   const addedCollections: Collection[] = []
+  const replacedCollections: Collection[] = []
   const skippedCollections: string[] = []
-  imported.collections.forEach((collection) => {
-    const key = collection.name.trim().toLowerCase()
-    if (existingCollections.has(key)) {
-      skippedCollections.push(collection.name)
-      return
-    }
-    existingCollections.add(key)
-    addedCollections.push(collection)
-  })
+
+  let collections: Collection[]
+
+  if (mode === 'replace') {
+    const incoming = new Map(
+      imported.collections.map((collection) => [collection.name.trim().toLowerCase(), collection])
+    )
+
+    collections = currentCollections.map((collection) => {
+      const key = collection.name.trim().toLowerCase()
+      const replacement = incoming.get(key)
+      if (!replacement) return collection
+
+      incoming.delete(key)
+      const updated: Collection = { ...collection, requests: replacement.requests }
+      replacedCollections.push(updated)
+      return updated
+    })
+
+    incoming.forEach((collection) => {
+      if (existingCollections.has(collection.name.trim().toLowerCase())) return
+      addedCollections.push(collection)
+    })
+  } else {
+    imported.collections.forEach((collection) => {
+      const key = collection.name.trim().toLowerCase()
+      if (existingCollections.has(key)) {
+        skippedCollections.push(collection.name)
+        return
+      }
+      existingCollections.add(key)
+      addedCollections.push(collection)
+    })
+    collections = [...currentCollections, ...addedCollections]
+  }
 
   const addedEnvironments = imported.environments.filter((environment) => {
     const key = environment.name.trim().toLowerCase()
@@ -210,9 +242,10 @@ export function mergeImportedWorkspace(
   })
 
   return {
-    collections: [...currentCollections, ...addedCollections],
+    collections,
     environments: [...currentEnvironments, ...addedEnvironments],
     addedCollections,
+    replacedCollections,
     addedEnvironments,
     skippedCollections
   }

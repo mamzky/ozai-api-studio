@@ -57,7 +57,7 @@ src/
 - Mock response per request: contoh response dari OpenAPI contract, fallback generated kalau tidak ada
 - Response viewer: status, latency, size, JSON highlight, headers
 - Environment variables `{{var}}` dan secret variables
-- Import cURL (paste di URL bar), import OpenAPI JSON, dan import workspace export (`.json`) dengan dedupe berdasarkan nama collection
+- Import cURL (paste di URL bar), import OpenAPI JSON, dan import workspace export (`.json`) dengan pilihan **Add new only** atau **Replace existing** (dedupe berdasarkan nama collection)
 - Export/import workspace, local history, rollback
 - Sync Supabase: upload, import via URL, history
 - Resizable response panel dan context menu

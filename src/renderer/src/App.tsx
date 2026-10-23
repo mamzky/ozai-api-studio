@@ -9,6 +9,7 @@ import PromptDialog from './components/PromptDialog'
 import EnvironmentsModal from './components/EnvironmentsModal'
 import SyncDialog from './components/SyncDialog'
 import HistoryDialog from './components/HistoryDialog'
+import WorkspaceImportDialog from './components/WorkspaceImportDialog'
 import { Bolt, Plus } from './components/Icons'
 import { createRequest, findRequest } from './data/defaultData'
 import { useAppData } from './hooks/useAppData'
@@ -19,7 +20,13 @@ import { applyLocalSecrets, sanitizeEnvironments } from './lib/secrets'
 import { loadHistory, saveHistory, syncPull, syncTest, syncUpload } from './services/sync'
 import { sendMockRequest } from './services/mock'
 import { parseOpenApiCollections } from './lib/openapi'
-import { mergeImportedWorkspace, parseWorkspaceExport } from './lib/workspace'
+import {
+  mergeImportedWorkspace,
+  parseWorkspaceExport,
+  type ImportedWorkspace,
+  type WorkspaceImportMode,
+  type WorkspaceMergeResult
+} from './lib/workspace'
 import type { ApiRequest, ApiResponse, Collection, HistoryEntry, RequestError, WorkspaceSnapshot } from './types/api'
 
 interface MenuState {
@@ -33,6 +40,12 @@ interface ConfirmState {
   message: string
   confirmLabel: string
   onConfirm: () => void
+}
+
+interface PendingWorkspaceImport {
+  workspace: ImportedWorkspace
+  merge: WorkspaceMergeResult
+  replace: WorkspaceMergeResult
 }
 
 interface RenameTarget {
@@ -91,6 +104,7 @@ export default function App() {
   const [loadingId, setLoadingId] = useState<string | null>(null)
   const [menu, setMenu] = useState<MenuState | null>(null)
   const [confirm, setConfirm] = useState<ConfirmState | null>(null)
+  const [workspaceImport, setWorkspaceImport] = useState<PendingWorkspaceImport | null>(null)
   const [renaming, setRenaming] = useState<RenameTarget | null>(null)
   const [alert, setAlert] = useState<{ title: string; message: string } | null>(null)
   const [prompt, setPrompt] = useState<PromptState | null>(null)
@@ -528,6 +542,40 @@ export default function App() {
     window.addEventListener('mouseup', onUp)
   }, [])
 
+  const applyWorkspaceImport = useCallback(
+    (result: WorkspaceMergeResult, mode: WorkspaceImportMode) => {
+      setCollections(result.collections)
+      setEnvironments(result.environments)
+
+      const changed = [...result.replacedCollections, ...result.addedCollections]
+      setExpanded((prev) => {
+        const next = { ...prev }
+        changed.forEach((collection) => {
+          next[collection.id] = true
+          collection.requests.forEach((request) => {
+            const segments = request.group ?? []
+            let path = ''
+            segments.forEach((segment) => {
+              path = path ? `${path}/${segment}` : segment
+              next[`${collection.id}::${path}`] = true
+            })
+          })
+        })
+        return next
+      })
+
+      const first =
+        mode === 'replace'
+          ? result.replacedCollections[0] ?? result.addedCollections[0]
+          : result.addedCollections[0]
+      if (first) {
+        setSelectedCollectionId(first.id)
+        setSelectedRequestId(first.requests[0]?.id ?? null)
+      }
+    },
+    [setCollections, setEnvironments]
+  )
+
   const handleImportFile = useCallback(
     async (event: ChangeEvent<HTMLInputElement>) => {
       const file = event.target.files?.[0]
@@ -539,49 +587,22 @@ export default function App() {
         const workspace = parseWorkspaceExport(text)
 
         if (workspace) {
-          const result = mergeImportedWorkspace(collections, environments, workspace)
-          if (result.addedCollections.length === 0 && result.addedEnvironments.length === 0) {
+          const merge = mergeImportedWorkspace(collections, environments, workspace, 'merge')
+          const replace = mergeImportedWorkspace(collections, environments, workspace, 'replace')
+
+          if (
+            merge.addedCollections.length === 0 &&
+            merge.addedEnvironments.length === 0 &&
+            replace.replacedCollections.length === 0
+          ) {
             setAlert({
-              title: 'Workspace already imported',
-              message: `All ${workspace.collections.length} collection(s) in "${workspace.workspaceName}" already exist. Existing data was not changed.`
+              title: 'Nothing to import',
+              message: `Tidak ada collection baru atau environment baru di "${workspace.workspaceName}".`
             })
             return
           }
 
-          const skipped = result.skippedCollections.length
-          setConfirm({
-            title: 'Import workspace?',
-            message: `Add ${result.addedCollections.length} collection(s) and ${result.addedEnvironments.length} environment(s) from "${workspace.workspaceName}".${
-              skipped > 0 ? ` ${skipped} existing collection(s) will be skipped.` : ''
-            } Your current data is kept.`,
-            confirmLabel: 'Import',
-            onConfirm: () => {
-              setCollections(result.collections)
-              setEnvironments(result.environments)
-              setExpanded((prev) => {
-                const next = { ...prev }
-                result.addedCollections.forEach((collection) => {
-                  next[collection.id] = true
-                  collection.requests.forEach((request) => {
-                    const segments = request.group ?? []
-                    let path = ''
-                    segments.forEach((segment) => {
-                      path = path ? `${path}/${segment}` : segment
-                      next[`${collection.id}::${path}`] = true
-                    })
-                  })
-                })
-                return next
-              })
-
-              const first = result.addedCollections[0]
-              if (first) {
-                setSelectedCollectionId(first.id)
-                setSelectedRequestId(first.requests[0]?.id ?? null)
-              }
-              setConfirm(null)
-            }
-          })
+          setWorkspaceImport({ workspace, merge, replace })
           return
         }
 
@@ -805,6 +826,21 @@ export default function App() {
           hideCancel
           onConfirm={() => setAlert(null)}
           onCancel={() => setAlert(null)}
+        />
+      )}
+
+      {workspaceImport && (
+        <WorkspaceImportDialog
+          workspaceName={workspaceImport.workspace.workspaceName}
+          newCollections={workspaceImport.merge.addedCollections.map((collection) => collection.name)}
+          existingCollections={workspaceImport.merge.skippedCollections}
+          newEnvironments={workspaceImport.merge.addedEnvironments.map((environment) => environment.name)}
+          onImport={(mode) => {
+            const result = mode === 'replace' ? workspaceImport.replace : workspaceImport.merge
+            applyWorkspaceImport(result, mode)
+            setWorkspaceImport(null)
+          }}
+          onCancel={() => setWorkspaceImport(null)}
         />
       )}
 
