@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, ty
 import TopBar from './components/TopBar'
 import Sidebar from './components/Sidebar'
 import RequestEditor from './components/RequestEditor'
+import RequestTabBar, { type RequestTabItem } from './components/RequestTabBar'
 import ResponseViewer from './components/ResponseViewer'
 import ContextMenu, { type ContextMenuItem } from './components/ContextMenu'
 import ConfirmDialog from './components/ConfirmDialog'
@@ -114,6 +115,7 @@ export default function App() {
   const [selectedCollectionId, setSelectedCollectionId] = useState<string | null>(null)
   const [selectedRequestId, setSelectedRequestId] = useState<string | null>(null)
   const [selectedExampleId, setSelectedExampleId] = useState<string | null>(null)
+  const [openTabs, setOpenTabs] = useState<string[]>([])
   const [expanded, setExpanded] = useState<Record<string, boolean>>({})
   const [search, setSearch] = useState('')
   const [workspace, setWorkspace] = useState('My Workspace')
@@ -174,6 +176,25 @@ export default function App() {
     void loadHistory().then(setHistoryEntries)
   }, [])
 
+  useEffect(() => {
+    if (!selectedRequestId) return
+    if (!findRequest(collections, selectedRequestId)) return
+    setOpenTabs((prev) => (prev.includes(selectedRequestId) ? prev : [...prev, selectedRequestId]))
+  }, [collections, selectedRequestId])
+
+  useEffect(() => {
+    if (!loaded) return
+    const validIds = new Set(collections.flatMap((collection) => collection.requests.map((request) => request.id)))
+    setOpenTabs((prev) => {
+      const next = prev.filter((requestId) => validIds.has(requestId))
+      return next.length === prev.length ? prev : next
+    })
+    if (selectedRequestId && !validIds.has(selectedRequestId)) {
+      setSelectedRequestId(null)
+      setSelectedExampleId(null)
+    }
+  }, [collections, loaded, selectedRequestId])
+
   const toggleCollection = useCallback((collectionId: string) => {
     setExpanded((prev) => ({ ...prev, [collectionId]: !prev[collectionId] }))
   }, [])
@@ -211,6 +232,7 @@ export default function App() {
     (requestId: string) => {
       setSelectedRequestId(requestId)
       setSelectedExampleId(null)
+      setOpenTabs((prev) => (prev.includes(requestId) ? prev : [...prev, requestId]))
       const found = findRequest(collections, requestId)
       if (found) {
         setSelectedCollectionId(found.collection.id)
@@ -218,6 +240,29 @@ export default function App() {
       }
     },
     [collections]
+  )
+
+  const handleCloseTab = useCallback(
+    (requestId: string) => {
+      const index = openTabs.indexOf(requestId)
+      const next = openTabs.filter(
+        (id) => id !== requestId && Boolean(findRequest(collections, id))
+      )
+      setOpenTabs(next)
+      if (selectedRequestId !== requestId) return
+
+      const fallback = next[index] ?? next[index - 1] ?? null
+      setSelectedExampleId(null)
+      setSelectedRequestId(fallback)
+      if (fallback) {
+        const found = findRequest(collections, fallback)
+        if (found) {
+          setSelectedCollectionId(found.collection.id)
+          setExpanded((prev) => ({ ...prev, [found.collection.id]: true }))
+        }
+      }
+    },
+    [collections, openTabs, selectedRequestId]
   )
 
   const handleSelectCollection = useCallback((collectionId: string) => {
@@ -250,6 +295,7 @@ export default function App() {
       confirmLabel: 'Clear All',
       onConfirm: () => {
         setCollections([])
+        setOpenTabs([])
         setExpanded({})
         setSelectedCollectionId(null)
         setSelectedRequestId(null)
@@ -1021,6 +1067,16 @@ export default function App() {
     [collections, handleDeleteExample]
   )
 
+  const requestTabs: RequestTabItem[] = openTabs
+    .map((requestId) => findRequest(collections, requestId)?.request)
+    .filter((request): request is ApiRequest => Boolean(request))
+    .map((request) => ({
+      id: request.id,
+      name: request.name,
+      method: request.method,
+      mock: request.mock
+    }))
+
   const breadcrumb = active
     ? `${active.collection.name} / ${active.request.name}${activeExample ? ` / ${activeExample.name}` : ''}`
     : 'No request selected'
@@ -1070,6 +1126,12 @@ export default function App() {
         />
 
         <main className="flex min-h-0 min-w-0 flex-1 flex-col">
+          <RequestTabBar
+            tabs={requestTabs}
+            activeId={selectedRequestId}
+            onSelect={handleSelectRequest}
+            onClose={handleCloseTab}
+          />
           {active ? (
             <div ref={splitRef} className="flex min-h-0 flex-1 flex-col">
               <RequestEditor
