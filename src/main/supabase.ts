@@ -335,6 +335,9 @@ create table if not exists studio_commits (
   created_at timestamptz not null default now(),
   data jsonb not null
 );
+alter table studio_workspace enable row level security;
+alter table studio_commits enable row level security;
+create index if not exists studio_commits_created_at_idx on studio_commits (created_at desc);
 `
 
 function classifyError(error: unknown): { code: 'offline' | 'auth' | 'invalid' | 'unknown'; message: string } {

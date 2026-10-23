@@ -1,0 +1,5 @@
+project_id = "sqovsdtuprytuyeeytjr"
+
+[functions.mock]
+# The function checks the Supabase anon/publishable key (or MOCK_KEY) itself.
+verify_jwt = false

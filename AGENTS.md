@@ -47,6 +47,10 @@ src/
     services/       # storage lokal + sync client
     types/          # tipe renderer
   shared/types.ts   # tipe yang dipakai main + renderer
+supabase/
+  functions/mock/   # Edge Function mock API (deploy terpisah)
+  migrations/       # schema studio_workspace + studio_commits + RLS
+  config.toml       # konfigurasi function mock
 ```
 
 ## Fitur yang sudah ada
@@ -64,6 +68,7 @@ src/
 - Import cURL (paste di URL bar), import OpenAPI JSON, dan import workspace export (`.json`) dengan pilihan **Add new only** atau **Replace existing** (dedupe berdasarkan nama collection)
 - Export/import workspace, local history, rollback
 - Sync Supabase: upload, import via URL, history
+- Hosted mock API: Supabase Edge Function `supabase/functions/mock` menyajikan example response sebagai endpoint HTTP nyata
 - Resizable response panel dan context menu
 
 ## Aturan arsitektur
@@ -88,6 +93,17 @@ src/
 - Method HTTP punya warna konsisten lewat `lib/methods.ts`.
 - Gunakan `studio-scroll` untuk area scroll.
 - Pertahankan spacing compact dan layout desktop.
+
+## Supabase Mock API
+
+Mock endpoint membaca snapshot terbaru dari `studio_workspace` dan menyajikan example response berdasarkan `method + path`. Detail cara pakai ada di `supabase/README.md`.
+
+- Deploy: `npx supabase functions deploy mock --project-ref <ref> --no-verify-jwt`
+- Function melakukan auth sendiri via anon/publishable key (`apikey` header) atau `MOCK_KEY`
+- Endpoint bantu: `/__ozai/health`, `/__ozai/routes`
+- Pilih example via `X-Ozai-Example: 403` atau `?__example=403`
+- Jangan pernah mengirim service role key ke renderer/FE
+- RLS wajib aktif di `studio_workspace` dan `studio_commits`
 
 ## Verifikasi sebelum selesai
 
