@@ -17,6 +17,7 @@ import { buildFinalUrl, buildHeaders, encodeBase64, isHttpUrl, validateJsonBody 
 import { buildVariableMap, interpolate, resolveUrl } from './lib/environments'
 import { applyLocalSecrets, sanitizeEnvironments } from './lib/secrets'
 import { loadHistory, saveHistory, syncPull, syncTest, syncUpload } from './services/sync'
+import { sendMockRequest } from './services/mock'
 import { parseOpenApiCollections } from './lib/openapi'
 import type { ApiRequest, ApiResponse, Collection, HistoryEntry, RequestError, WorkspaceSnapshot } from './types/api'
 
@@ -561,6 +562,24 @@ export default function App() {
 
     const variables = buildVariableMap(activeEnvironment)
     const resolvedUrl = resolveUrl(request.url, variables)
+
+    // Mock mode never touches the network, so skip URL/body validation.
+    if (request.mock) {
+      setLoadingId(requestId)
+      setErrors((prev) => ({ ...prev, [requestId]: null }))
+      try {
+        const response = await sendMockRequest(request, resolvedUrl)
+        setResponses((prev) => ({ ...prev, [requestId]: response }))
+      } catch (error) {
+        setErrors((prev) => ({
+          ...prev,
+          [requestId]: { kind: 'unknown', message: 'Mock Failed', detail: (error as Error).message }
+        }))
+      } finally {
+        setLoadingId(null)
+      }
+      return
+    }
 
     if (!isHttpUrl(resolvedUrl)) {
       setErrors((prev) => ({ ...prev, [requestId]: { kind: 'invalid-url', message: 'Invalid URL.' } }))

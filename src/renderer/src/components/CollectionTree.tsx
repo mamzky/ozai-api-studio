@@ -131,6 +131,13 @@ export default function CollectionTree({
         ) : (
           <span className="truncate">{request.name}</span>
         )}
+
+        {!isRenamingRequest && request.mock && (
+          <span
+            className="ml-auto h-1 w-1 shrink-0 rounded-full bg-violet-400/70"
+            title="Mock response enabled"
+          />
+        )}
       </button>
     )
   }

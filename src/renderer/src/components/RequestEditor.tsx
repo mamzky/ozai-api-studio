@@ -4,7 +4,7 @@ import RequestTabs from './RequestTabs'
 import HighlightedInput from './HighlightedInput'
 import { HTTP_METHODS, METHOD_STYLES } from '../lib/methods'
 import { isCurlCommand, parseCurl } from '../lib/curl'
-import { Send, Spinner } from './Icons'
+import { Send, Spinner, Bolt } from './Icons'
 import type { ApiRequest, EnvVariable, HttpMethod } from '../types/api'
 
 interface RequestEditorProps {
@@ -84,6 +84,28 @@ export default function RequestEditor({ request, onChange, onSend, sending, envi
             </div>
           )}
         </div>
+
+        <button
+          type="button"
+          onClick={() => onChange({ mock: !request.mock })}
+          aria-pressed={request.mock}
+          title={
+            request.mock
+              ? 'Mock is on — Send returns the example response without a network call.'
+              : request.mockResponse
+                ? 'Mock example available — click to preview it without sending the request.'
+                : 'Mock is off — click to use a generated fallback response.'
+          }
+          className={`flex h-9 shrink-0 items-center gap-1.5 rounded-md border px-2.5 text-xs font-medium transition-colors ${
+            request.mock
+              ? 'border-violet-500/40 bg-violet-500/10 text-violet-300 hover:bg-violet-500/15'
+              : 'border-studio-border bg-studio-elevated text-studio-muted hover:bg-studio-strong/50 hover:text-studio-text'
+          }`}
+        >
+          <Bolt className="h-3.5 w-3.5" />
+          Mock
+          <span className={`h-1.5 w-1.5 rounded-full ${request.mock ? 'bg-violet-400' : 'bg-studio-faint'}`} />
+        </button>
 
         <button
           type="button"

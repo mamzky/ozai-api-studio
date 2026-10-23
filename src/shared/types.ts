@@ -37,6 +37,10 @@ export interface ApiRequest {
   auth: AuthConfig
   body: BodyConfig
   group?: string[]
+  /** When true, Send returns `mockResponse` (or a generated fallback) without hitting the network. */
+  mock: boolean
+  /** Example response captured from an OpenAPI contract. */
+  mockResponse?: MockResponse
 }
 
 export interface Collection {
@@ -50,6 +54,13 @@ export interface ResponseHeader {
   value: string
 }
 
+export interface MockResponse {
+  status: number
+  statusText: string
+  headers: ResponseHeader[]
+  body: string
+}
+
 export interface ApiResponse {
   status: number
   statusText: string
@@ -57,6 +68,8 @@ export interface ApiResponse {
   body: string
   timeMs: number
   sizeKb: number
+  /** True when the response came from the built-in mock instead of the network. */
+  mocked?: boolean
 }
 
 export type RequestErrorKind = 'invalid-url' | 'network' | 'timeout' | 'invalid-json' | 'unknown'

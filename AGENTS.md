@@ -54,6 +54,7 @@ src/
 - Collection tree, rename, duplicate, delete, search
 - Request editor: method, URL, params, auth (Bearer/Basic/API key), headers, body
 - Body: none, JSON, raw
+- Mock response per request: contoh response dari OpenAPI contract, fallback generated kalau tidak ada
 - Response viewer: status, latency, size, JSON highlight, headers
 - Environment variables `{{var}}` dan secret variables
 - Import cURL (paste di URL bar) dan import OpenAPI JSON
@@ -73,6 +74,7 @@ src/
 8. **Styling** memakai token Tailwind `studio-*`, dark theme, compact, developer-focused.
 9. **Jangan commit** `.env`, `*.local.json`, credential, `node_modules`, `out`, `dist`.
 10. Jika mengubah signature Electron di macOS, gunakan `npm run fix:electron`; jangan hapus script postinstall.
+11. **Mock response** dijalankan di renderer (`services/mock.ts`), tidak lewat IPC dan tidak menyentuh network. Saat `request.mock` aktif, lewati validasi URL/JSON karena tujuannya hanya menampilkan contoh response. Importer OpenAPI mengambil contoh response pertama (prioritas 200 → 2xx) dan mengaktifkan mock otomatis.
 
 ## Konvensi UI
 
@@ -92,6 +94,8 @@ npm run build
 ```
 
 Untuk perubahan UI, cek alur: pilih request → edit → send → response; tambah/hapus param dan header; ganti body; buka environment; import cURL; expand/collapse collection.
+
+Untuk perubahan mock: import file OpenAPI (`hoppscotch-team-collections-openapi.json`), pilih request yang punya contoh response, pastikan toggle Mock aktif, lalu Send. Response harus menampilkan badge **Mock** tanpa network call. Request tanpa contoh response harus memakai fallback mock.
 
 ## Batas scope
 

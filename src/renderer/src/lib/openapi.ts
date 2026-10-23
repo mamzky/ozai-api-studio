@@ -1,4 +1,12 @@
-import type { ApiRequest, AuthConfig, BodyConfig, Collection, HttpMethod, KeyValue } from '../types/api'
+import type {
+  ApiRequest,
+  AuthConfig,
+  BodyConfig,
+  Collection,
+  HttpMethod,
+  KeyValue,
+  MockResponse
+} from '../types/api'
 import { uid } from './format'
 
 type Json = Record<string, unknown>
@@ -142,6 +150,118 @@ const findJsonLike = (content: Json): unknown => {
   return key ? content[key] : undefined
 }
 
+const STATUS_TEXT: Record<number, string> = {
+  200: 'OK',
+  201: 'Created',
+  202: 'Accepted',
+  204: 'No Content',
+  301: 'Moved Permanently',
+  302: 'Found',
+  304: 'Not Modified',
+  400: 'Bad Request',
+  401: 'Unauthorized',
+  403: 'Forbidden',
+  404: 'Not Found',
+  405: 'Method Not Allowed',
+  408: 'Request Timeout',
+  409: 'Conflict',
+  422: 'Unprocessable Entity',
+  429: 'Too Many Requests',
+  500: 'Internal Server Error',
+  502: 'Bad Gateway',
+  503: 'Service Unavailable',
+  504: 'Gateway Timeout'
+}
+
+const stringifyExample = (value: unknown): string => {
+  if (value === undefined) return ''
+  if (typeof value === 'string') {
+    const trimmed = value.trim()
+    if (!trimmed) return ''
+    try {
+      return JSON.stringify(JSON.parse(trimmed), null, 2)
+    } catch {
+      return value
+    }
+  }
+  try {
+    return JSON.stringify(value, null, 2)
+  } catch {
+    return String(value)
+  }
+}
+
+const pickExample = (
+  media: Json,
+  resolve: (node: unknown) => Json | undefined
+): unknown => {
+  const resolved = resolve(media) ?? media
+  if (resolved.example !== undefined) return resolved.example
+
+  if (isObject(resolved.examples)) {
+    const first = Object.values(resolved.examples).find(
+      (entry) => isObject(entry) && entry.value !== undefined
+    )
+    if (isObject(first)) return first.value
+  }
+
+  if (isObject(resolved.schema) && Object.keys(resolved.schema).length > 0) {
+    return exampleFor(resolved.schema, resolve)
+  }
+
+  return undefined
+}
+
+/**
+ * Reads the first useful example response from an OpenAPI operation.
+ * Success responses are preferred (200 → 2xx → 3xx → 4xx → 5xx).
+ */
+const mockFromOperation = (
+  operation: Json,
+  resolve: (node: unknown) => Json | undefined
+): MockResponse | undefined => {
+  if (!isObject(operation.responses)) return undefined
+
+  const rank = (status: number): number => {
+    if (status === 200) return 0
+    if (status >= 200 && status < 300) return 1
+    if (status >= 300 && status < 400) return 2
+    if (status >= 400 && status < 500) return 3
+    return 4
+  }
+
+  const candidates = Object.entries(operation.responses)
+    .filter(([status]) => /^\d{3}$/.test(status))
+    .sort(([left], [right]) => {
+      const a = Number(left)
+      const b = Number(right)
+      return rank(a) - rank(b) || a - b
+    })
+
+  for (const [status, rawResponse] of candidates) {
+    const response = resolve(rawResponse) ?? (isObject(rawResponse) ? rawResponse : null)
+    if (!response || !isObject(response) || !isObject(response.content)) continue
+
+    const content = response.content
+    const mediaType =
+      Object.keys(content).find((type) => type.includes('json')) ?? Object.keys(content)[0]
+    if (!mediaType || !isObject(content[mediaType])) continue
+
+    const example = pickExample(content[mediaType] as Json, resolve)
+    if (example === undefined) continue
+
+    const statusCode = Number(status)
+    return {
+      status: statusCode,
+      statusText: STATUS_TEXT[statusCode] ?? '',
+      headers: [{ key: 'content-type', value: mediaType }],
+      body: stringifyExample(example)
+    }
+  }
+
+  return undefined
+}
+
 const authFromSecurity = (
   operation: Json,
   root: Json,
@@ -250,6 +370,8 @@ const buildOperationRequest = (
     (typeof operation.summary === 'string' && operation.summary) ||
     `${method} ${path}`
 
+  const mockResponse = mockFromOperation(operation, resolve)
+
   return {
     id: uid('req'),
     name,
@@ -259,6 +381,8 @@ const buildOperationRequest = (
     headers,
     auth: authFromSecurity(operation, root, resolve),
     body,
+    mock: Boolean(mockResponse),
+    ...(mockResponse ? { mockResponse } : {}),
     ...(group.length > 0 ? { group } : {})
   }
 }
@@ -293,6 +417,7 @@ const buildDroppedRequest = (dropped: Json, group: string[]): ApiRequest => {
     headers,
     auth: authFromDropped(request.auth),
     body,
+    mock: false,
     ...(group.length > 0 ? { group } : {})
   }
 }

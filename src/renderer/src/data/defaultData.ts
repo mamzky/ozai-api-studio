@@ -71,6 +71,7 @@ export function createRequest(partial: Partial<ApiRequest> = {}): ApiRequest {
     headers: [],
     auth: emptyAuth(),
     body: emptyBody('none'),
+    mock: false,
     ...partial
   }
 }

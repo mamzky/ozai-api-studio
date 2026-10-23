@@ -2,7 +2,7 @@ import { useRef, useState, type MouseEvent as ReactMouseEvent } from 'react'
 import JsonView from './JsonView'
 import { formatBytes } from '../lib/format'
 import { statusBg, statusTone } from '../lib/methods'
-import { Spinner } from './Icons'
+import { Bolt, Spinner } from './Icons'
 import type { ApiResponse, RequestError, RequestErrorKind } from '../types/api'
 
 interface ResponseViewerProps {
@@ -74,6 +74,12 @@ export default function ResponseViewer({ response, error, loading, heightPct, on
             </span>
             <span className="font-mono text-xs text-studio-muted">{response.timeMs} ms</span>
             <span className="font-mono text-xs text-studio-muted">{formatBytes(response.sizeKb)}</span>
+            {response.mocked && (
+              <span className="flex items-center gap-1 rounded-md border border-violet-500/30 bg-violet-500/10 px-1.5 py-0.5 text-2xs font-medium text-violet-300">
+                <Bolt className="h-2.5 w-2.5" />
+                Mock
+              </span>
+            )}
           </div>
         )}
 
