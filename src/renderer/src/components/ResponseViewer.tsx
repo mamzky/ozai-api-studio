@@ -1,8 +1,8 @@
-import { useRef, useState, type MouseEvent as ReactMouseEvent } from 'react'
+import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react'
 import JsonView from './JsonView'
 import { formatBytes } from '../lib/format'
 import { statusBg, statusTone } from '../lib/methods'
-import { Bolt, Bookmark, Spinner } from './Icons'
+import { Bolt, Bookmark, Copy, Spinner } from './Icons'
 import type { ApiResponse, RequestError, RequestErrorKind, RequestSnapshot } from '../types/api'
 
 interface ResponseViewerProps {
@@ -38,7 +38,13 @@ export default function ResponseViewer({
 }: ResponseViewerProps) {
   const [tab, setTab] = useState<ResponseTab>('body')
   const [copied, setCopied] = useState(false)
+  const [headersCopied, setHeadersCopied] = useState(false)
   const selectionRef = useRef('')
+
+  useEffect(() => {
+    setCopied(false)
+    setHeadersCopied(false)
+  }, [response])
 
   const captureSelection = () => {
     selectionRef.current = window.getSelection()?.toString() ?? ''
@@ -59,6 +65,18 @@ export default function ResponseViewer({
       window.setTimeout(() => setCopied(false), 1200)
     } catch {
       setCopied(false)
+    }
+  }
+
+  const copyHeaders = async () => {
+    if (!response) return
+    const text = response.headers.map((header) => `${header.key}: ${header.value}`).join('\n')
+    try {
+      await navigator.clipboard.writeText(text)
+      setHeadersCopied(true)
+      window.setTimeout(() => setHeadersCopied(false), 1200)
+    } catch {
+      setHeadersCopied(false)
     }
   }
 
@@ -156,16 +174,34 @@ export default function ResponseViewer({
               Save as example
             </button>
           )}
-          <button
-            type="button"
-            onClick={copyBody}
-            disabled={!response || Boolean(error)}
-            className="ml-1 rounded-md px-2 py-1 text-xs text-studio-muted transition-colors hover:bg-studio-strong/50 hover:text-studio-text disabled:opacity-40"
-          >
-            {copied ? 'Copied' : 'Copy'}
-          </button>
+          {tab === 'body' && (
+            <button
+              type="button"
+              onClick={copyBody}
+              disabled={!response || Boolean(error)}
+              className="ml-1 rounded-md px-2 py-1 text-xs text-studio-muted transition-colors hover:bg-studio-strong/50 hover:text-studio-text disabled:opacity-40"
+            >
+              {copied ? 'Copied' : 'Copy'}
+            </button>
+          )}
         </div>
       </div>
+
+      {tab === 'headers' && response && !loading && !error && (
+        <div className="flex shrink-0 items-center justify-between border-b border-studio-border bg-studio-panel/40 px-4 py-1.5">
+          <span className="font-mono text-2xs text-studio-faint">{response.headers.length} headers</span>
+          <button
+            type="button"
+            onClick={copyHeaders}
+            disabled={response.headers.length === 0}
+            title="Copy all response headers"
+            className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-studio-muted transition-colors hover:bg-studio-strong/50 hover:text-studio-text disabled:opacity-40"
+          >
+            <Copy className="h-3 w-3" />
+            {headersCopied ? 'Copied' : 'Copy headers'}
+          </button>
+        </div>
+      )}
 
       <div
         className="studio-scroll min-h-0 flex-1 overflow-auto"

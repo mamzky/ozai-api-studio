@@ -51,6 +51,7 @@ src/
 
 ## Fitur yang sudah ada
 
+- Copy headers dari tab Headers request maupun response
 - Multi-tab request: buka beberapa request sekaligus, switch tab, close tab (termasuk middle-click)
 - Collection tree, rename, duplicate, delete, close & clear collection, clear all collections, search
 - Request editor: method, URL, params, auth (Bearer/Basic/API key), headers, body
