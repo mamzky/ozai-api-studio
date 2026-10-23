@@ -241,6 +241,29 @@ export default function App() {
     [collections]
   )
 
+  const handleClearAllCollections = useCallback(() => {
+    if (collections.length === 0) return
+    const requestCount = collections.reduce((sum, collection) => sum + collection.requests.length, 0)
+    setConfirm({
+      title: 'Clear all collections?',
+      message: `Remove all ${collections.length} collection(s) — ${requestCount} request(s) — from this workspace? Environments are kept. This cannot be undone.`,
+      confirmLabel: 'Clear All',
+      onConfirm: () => {
+        setCollections([])
+        setExpanded({})
+        setSelectedCollectionId(null)
+        setSelectedRequestId(null)
+        setSelectedExampleId(null)
+        setResponses({})
+        setErrors({})
+        setExampleDialog(null)
+        setSearch('')
+        setRenaming(null)
+        setConfirm(null)
+      }
+    })
+  }, [collections, setCollections])
+
   const handleNewCollection = useCallback(() => {
     const collection: Collection = { id: uid('col'), name: 'New Collection', requests: [] }
     setCollections((prev) => [...prev, collection])
@@ -1042,6 +1065,7 @@ export default function App() {
           onNewCollection={handleNewCollection}
           onNewRequest={handleNewRequest}
           onImport={() => fileInputRef.current?.click()}
+          onClearCollections={handleClearAllCollections}
           onBlankContextMenu={openBlankMenu}
         />
 

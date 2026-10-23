@@ -27,7 +27,7 @@ export function useAppData(): UseAppDataResult {
     loadAppData().then((data) => {
       if (cancelled) return
       const nextCollections =
-        data && data.collections && data.collections.length > 0 ? data.collections : createDefaultCollections()
+        data && Array.isArray(data.collections) ? data.collections : createDefaultCollections()
       const nextEnvironments =
         data && data.environments && data.environments.length > 0
           ? data.environments

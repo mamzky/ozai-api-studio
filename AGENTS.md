@@ -51,7 +51,7 @@ src/
 
 ## Fitur yang sudah ada
 
-- Collection tree, rename, duplicate, delete, close & clear collection, search
+- Collection tree, rename, duplicate, delete, close & clear collection, clear all collections, search
 - Request editor: method, URL, params, auth (Bearer/Basic/API key), headers, body
 - Body: none, JSON, raw
 - Mock response per request: contoh response dari OpenAPI contract, fallback generated kalau tidak ada

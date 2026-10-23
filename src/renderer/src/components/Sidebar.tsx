@@ -1,6 +1,6 @@
 import type { MouseEvent as ReactMouseEvent } from 'react'
 import CollectionTree from './CollectionTree'
-import { Bolt, Layers, Plus, Search, Upload } from './Icons'
+import { Bolt, Layers, Plus, Search, Trash, Upload } from './Icons'
 import type { Collection } from '../types/api'
 
 interface RenameTarget {
@@ -30,6 +30,7 @@ interface SidebarProps {
   onNewCollection: () => void
   onNewRequest: (collectionId: string) => void
   onImport: () => void
+  onClearCollections: () => void
   onBlankContextMenu: (event: ReactMouseEvent) => void
 }
 
@@ -55,6 +56,7 @@ export default function Sidebar({
   onNewCollection,
   onNewRequest,
   onImport,
+  onClearCollections,
   onBlankContextMenu
 }: SidebarProps) {
   return (
@@ -83,6 +85,16 @@ export default function Sidebar({
         <div className="flex items-center gap-0.5">
           <button type="button" className="icon-btn" title="Import OpenAPI or workspace" onClick={onImport}>
             <Upload className="h-3.5 w-3.5" />
+          </button>
+          <span className="mx-0.5 h-3 w-px bg-studio-border" />
+          <button
+            type="button"
+            className="icon-btn hover:bg-red-500/10 hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-30"
+            title="Clear all collections"
+            onClick={onClearCollections}
+            disabled={collections.length === 0}
+          >
+            <Trash className="h-3.5 w-3.5" />
           </button>
           <button
             type="button"
