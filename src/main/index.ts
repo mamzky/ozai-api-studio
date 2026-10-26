@@ -147,16 +147,33 @@ function registerIpc(): void {
     'sync:upload',
     (
       _event,
-      payload: { url: string; password: string; author: string; message: string; snapshot: WorkspaceSnapshot }
-    ) => uploadWorkspace(payload.url, payload.password, payload.author, payload.message, payload.snapshot)
+      payload: {
+        url: string
+        password: string
+        author: string
+        message: string
+        project: string
+        snapshot: WorkspaceSnapshot
+      }
+    ) =>
+      uploadWorkspace(
+        payload.url,
+        payload.password,
+        payload.author,
+        payload.message,
+        payload.project,
+        payload.snapshot
+      )
   )
 
-  ipcMain.handle('sync:pull', (_event, payload: { url: string; password: string }) =>
-    pullWorkspace(payload.url, payload.password)
+  ipcMain.handle('sync:pull', (_event, payload: { url: string; password: string; project: string }) =>
+    pullWorkspace(payload.url, payload.password, payload.project)
   )
 
-  ipcMain.handle('sync:commits', (_event, payload: { url: string; password: string; limit?: number }) =>
-    listCommits(payload.url, payload.password, payload.limit)
+  ipcMain.handle(
+    'sync:commits',
+    (_event, payload: { url: string; password: string; project: string; limit?: number }) =>
+      listCommits(payload.url, payload.password, payload.project, payload.limit)
   )
 
   ipcMain.handle('sync:test', (_event, payload: { url: string; password: string }) =>

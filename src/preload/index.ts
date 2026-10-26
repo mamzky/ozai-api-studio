@@ -23,12 +23,17 @@ const api = {
     password: string
     author: string
     message: string
+    project: string
     snapshot: WorkspaceSnapshot
   }): Promise<SyncUploadResult> => ipcRenderer.invoke('sync:upload', payload),
-  syncPull: (payload: { url: string; password: string }): Promise<SyncPullResult> =>
+  syncPull: (payload: { url: string; password: string; project: string }): Promise<SyncPullResult> =>
     ipcRenderer.invoke('sync:pull', payload),
-  syncCommits: (payload: { url: string; password: string; limit?: number }): Promise<SyncCommitsResult> =>
-    ipcRenderer.invoke('sync:commits', payload),
+  syncCommits: (payload: {
+    url: string
+    password: string
+    project: string
+    limit?: number
+  }): Promise<SyncCommitsResult> => ipcRenderer.invoke('sync:commits', payload),
   syncTest: (payload: { url: string; password: string }): Promise<{ ok: true } | { ok: false; error: string }> =>
     ipcRenderer.invoke('sync:test', payload),
   loadHistory: (): Promise<HistoryEntry[]> => ipcRenderer.invoke('history:load'),

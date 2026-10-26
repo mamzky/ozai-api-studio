@@ -1,6 +1,6 @@
 import { createClient } from 'npm:@supabase/supabase-js@2'
 
-const WORKSPACE_ID = 'default'
+const DEFAULT_PROJECT = 'default'
 const FUNCTION_PREFIX = '/functions/v1/mock'
 const CACHE_MS = 5_000
 
@@ -41,6 +41,7 @@ type Snapshot = {
 }
 
 type WorkspaceRow = {
+  id_project?: string
   data?: Snapshot
   updated_at?: string
   author?: string
@@ -102,7 +103,7 @@ const CORS_HEADERS: Record<string, string> = {
   'Access-Control-Allow-Methods': 'GET,POST,PUT,PATCH,DELETE,HEAD,OPTIONS',
   'Access-Control-Allow-Headers': '*',
   'Access-Control-Expose-Headers':
-    'x-ozai-mock,x-ozai-example,x-ozai-route,x-ozai-workspace-updated',
+    'x-ozai-mock,x-ozai-example,x-ozai-route,x-ozai-workspace-updated,x-ozai-project',
   'Access-Control-Max-Age': '86400'
 }
 
@@ -127,7 +128,7 @@ const supabase =
       })
     : null
 
-let workspaceCache: { at: number; row: WorkspaceRow | null } | null = null
+let workspaceCache: { project: string | null; at: number; row: WorkspaceRow | null } | null = null
 
 function jsonResponse(
   data: unknown,
@@ -337,7 +338,32 @@ function providedKey(req: Request, url: URL): string | null {
   return null
 }
 
-async function loadWorkspace(commit: string | null): Promise<WorkspaceRow | null> {
+function workspaceProject(req: Request, url: URL): string | null {
+  const raw =
+    req.headers.get('x-ozai-project') ||
+    url.searchParams.get('__project') ||
+    Deno.env.get('OZAI_DEFAULT_PROJECT') ||
+    ''
+  const value = raw.trim().toLowerCase()
+  return value || null
+}
+
+async function listProjects(): Promise<string[]> {
+  if (!supabase) return []
+  const { data, error } = await supabase
+    .from('studio_workspace')
+    .select('id_project')
+    .order('updated_at', { ascending: false })
+  if (error) return []
+  return (data ?? [])
+    .map((row) => row.id_project as string | null)
+    .filter((value): value is string => Boolean(value))
+}
+
+async function loadWorkspace(
+  commit: string | null,
+  project: string | null
+): Promise<WorkspaceRow | null> {
   if (!supabase) {
     throw new Error(
       'Supabase service role is not configured. Add SUPABASE_SERVICE_ROLE_KEY to the Edge Function secrets.'
@@ -347,33 +373,50 @@ async function loadWorkspace(commit: string | null): Promise<WorkspaceRow | null
   if (commit) {
     const commitId = Number(commit)
     if (!Number.isFinite(commitId)) return null
-    const { data, error } = await supabase
+    let query = supabase
       .from('studio_commits')
-      .select('data,created_at,author')
+      .select('data,created_at,author,id_project')
       .eq('id', commitId)
-      .maybeSingle()
+    if (project) query = query.eq('id_project', project)
+    const { data, error } = await query.maybeSingle()
     if (error) throw new Error(error.message)
     if (!data) return null
     return {
+      id_project: data.id_project as string,
       data: data.data as Snapshot,
       updated_at: data.created_at as string,
       author: data.author as string
     } as WorkspaceRow
   }
 
-  if (workspaceCache && Date.now() - workspaceCache.at < CACHE_MS) {
+  const cacheKey = project ?? null
+  if (workspaceCache && workspaceCache.project === cacheKey && Date.now() - workspaceCache.at < CACHE_MS) {
     return workspaceCache.row
   }
 
   const { data, error } = await supabase
     .from('studio_workspace')
-    .select('data,updated_at,author')
-    .eq('id', WORKSPACE_ID)
+    .select('data,updated_at,author,id_project')
+    .eq('id_project', project ?? DEFAULT_PROJECT)
     .maybeSingle()
   if (error) throw new Error(error.message)
 
-  const row = (data as WorkspaceRow | null) ?? null
-  workspaceCache = { at: Date.now(), row }
+  let row = (data as WorkspaceRow | null) ?? null
+
+  // Tanpa `?__project=`, pakai workspace 'default' kalau ada. Kalau tidak,
+  // sajikan project yang paling baru di-update supaya tetap ada yang tampil.
+  if (!row && !project) {
+    const latest = await supabase
+      .from('studio_workspace')
+      .select('data,updated_at,author,id_project')
+      .order('updated_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    if (latest.error) throw new Error(latest.error.message)
+    row = (latest.data as WorkspaceRow | null) ?? null
+  }
+
+  workspaceCache = { project: cacheKey, at: Date.now(), row }
   return row
 }
 
@@ -433,9 +476,22 @@ Deno.serve(async (req: Request) => {
 
   try {
     const commit = url.searchParams.get('__commit')
-    const workspace = await loadWorkspace(commit)
+    const project = workspaceProject(req, url)
+    const workspace = await loadWorkspace(commit, project)
 
     if (!workspace?.data) {
+      if (project) {
+        const available = await listProjects()
+        return jsonResponse(
+          {
+            error: `Project "${project}" belum di-upload`,
+            project,
+            available,
+            hint: 'Upload workspace dari Ozai API Studio dengan ID project yang sama, atau pilih project lain lewat ?__project=<slug>.'
+          },
+          404
+        )
+      }
       return jsonResponse(
         {
           error: 'No workspace uploaded yet',
@@ -445,6 +501,8 @@ Deno.serve(async (req: Request) => {
       )
     }
 
+    const activeProject = workspace.id_project ?? project ?? DEFAULT_PROJECT
+
     const { maps, totalExamples } = buildRoutes(workspace.data)
     const routeList = Array.from(maps.patterns.values())
 
@@ -453,6 +511,8 @@ Deno.serve(async (req: Request) => {
         {
           ok: true,
           service: 'ozai-mock',
+          project: activeProject,
+          projects: await listProjects(),
           workspace: {
             updatedAt: workspace.updated_at || null,
             author: workspace.author || null,
@@ -467,13 +527,17 @@ Deno.serve(async (req: Request) => {
           }
         },
         200,
-        { 'x-ozai-workspace-updated': workspace.updated_at || '' }
+        {
+          'x-ozai-workspace-updated': workspace.updated_at || '',
+          'x-ozai-project': activeProject
+        }
       )
     }
 
     if (path === '/__ozai/routes') {
       return jsonResponse(
         {
+          project: activeProject,
           workspace: {
             updatedAt: workspace.updated_at || null,
             author: workspace.author || null
@@ -483,7 +547,10 @@ Deno.serve(async (req: Request) => {
             .map(routeSummary)
         },
         200,
-        { 'x-ozai-workspace-updated': workspace.updated_at || '' }
+        {
+          'x-ozai-workspace-updated': workspace.updated_at || '',
+          'x-ozai-project': activeProject
+        }
       )
     }
 
@@ -497,7 +564,7 @@ Deno.serve(async (req: Request) => {
           hint: 'Open /__ozai/routes to see available routes. Path matching supports :param for numeric/UUID segments.'
         },
         404,
-        { 'x-ozai-workspace-updated': workspace.updated_at || '' }
+        { 'x-ozai-workspace-updated': workspace.updated_at || '', 'x-ozai-project': activeProject }
       )
     }
 
@@ -520,7 +587,7 @@ Deno.serve(async (req: Request) => {
           }))
         },
         404,
-        { 'x-ozai-workspace-updated': workspace.updated_at || '' }
+        { 'x-ozai-workspace-updated': workspace.updated_at || '', 'x-ozai-project': activeProject }
       )
     }
 
@@ -539,6 +606,7 @@ Deno.serve(async (req: Request) => {
     responseHeaders.set('x-ozai-example', safeHeaderValue(example.name))
     responseHeaders.set('x-ozai-route', safeHeaderValue(route.pattern))
     responseHeaders.set('x-ozai-workspace-updated', safeHeaderValue(workspace.updated_at || ''))
+    responseHeaders.set('x-ozai-project', safeHeaderValue(activeProject))
 
     const bodyAllowed = method !== 'HEAD' && example.status !== 204 && example.status !== 304
     console.log(

@@ -68,6 +68,7 @@ supabase/
 - Import cURL (paste di URL bar), import OpenAPI JSON, dan import workspace export (`.json`) dengan pilihan **Add new only** atau **Replace existing** (dedupe berdasarkan nama collection)
 - Export/import workspace, local history, rollback
 - Sync Supabase: upload, import via URL, history
+- Multi-project sync: satu database Supabase menampung banyak project lewat kolom `id_project` di `studio_workspace` dan `studio_commits` (mis. `bca-cmnv`, `pakuwon-phase-5`)
 - Hosted mock API: Supabase Edge Function `supabase/functions/mock` menyajikan example response sebagai endpoint HTTP nyata
 - Resizable response panel dan context menu
 
@@ -102,6 +103,7 @@ Mock endpoint membaca snapshot terbaru dari `studio_workspace` dan menyajikan ex
 - Function melakukan auth sendiri via anon/publishable key (`apikey` header) atau `MOCK_KEY`
 - Endpoint bantu: `/__ozai/health`, `/__ozai/routes`
 - Pilih example via `X-Ozai-Example: 403` atau `?__example=403`
+- Pilih project via `X-Ozai-Project: pakuwon-phase-5` atau `?__project=pakuwon-phase-5` (default: project `default`, fallback ke snapshot terbaru)
 - Jangan pernah mengirim service role key ke renderer/FE
 - RLS wajib aktif di `studio_workspace` dan `studio_commits`
 

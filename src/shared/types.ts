@@ -141,6 +141,8 @@ export interface SyncConnection {
   url: string
   password: string
   author: string
+  /** Slug project yang dipakai sebagai kunci baris di `studio_workspace`. */
+  project: string
 }
 
 export interface HistoryEntry {
@@ -149,6 +151,8 @@ export interface HistoryEntry {
   author: string
   createdAt: string
   snapshot: WorkspaceSnapshot
+  /** Project asal snapshot ini, kalau entry dibuat lewat sync. */
+  project?: string
 }
 
 export interface RemoteCommit {

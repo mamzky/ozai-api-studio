@@ -56,6 +56,22 @@ Point the FE's API base URL at the function and append the normal API paths, e.g
 https://<project-ref>.supabase.co/functions/v1/mock/api/v1/users/1
 ```
 
+## Selecting a project
+
+Satu database bisa menampung banyak project (mis. `bca-cmnv`, `pakuwon-phase-5`). Tiap project punya snapshot sendiri di `studio_workspace` dan riwayat commit sendiri.
+
+- Default: project `default` kalau ada; kalau tidak, snapshot yang paling baru di-update.
+- Select by project id:
+  ```http
+  X-Ozai-Project: pakuwon-phase-5
+  ```
+  or
+  ```
+  ?__project=pakuwon-phase-5
+  ```
+- Default project untuk deployment bisa diatur lewat secret `OZAI_DEFAULT_PROJECT`.
+- `/__ozai/health` menampilkan project aktif dan daftar project yang tersedia.
+
 ## Selecting an example
 
 A request can have multiple examples (status 200, 400, 403, …).
@@ -90,10 +106,11 @@ Path parameters: numeric and UUID segments are normalized to `:param` automatica
 
 The function reads:
 
-- `studio_workspace` row `id = 'default'` (latest snapshot)
-- optional `?__commit=<id>` from `studio_commits` to pin a saved commit
+- `studio_workspace` row `id_project = '<project>'` (latest snapshot untuk project itu)
+- optional `?__project=<slug>` / `X-Ozai-Project: <slug>` untuk memilih project
+- optional `?__commit=<id>` from `studio_commits` to pin a saved commit (tetap difilter per project kalau `__project` dikirim)
 
-If no workspace has been uploaded yet, the endpoint returns `503` with a hint to upload from the desktop app.
+If the requested project has not been uploaded yet, the endpoint returns `404` with the list of available projects. If no workspace has been uploaded at all, it returns `503` with a hint to upload from the desktop app.
 
 ## Security
 

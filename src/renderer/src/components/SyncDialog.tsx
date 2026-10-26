@@ -5,18 +5,26 @@ interface SyncDialogProps {
   mode: 'upload' | 'import'
   initial: SyncConnection | null
   onCancel: () => void
-  onSubmit: (values: { url: string; password: string; author: string; message: string }) => Promise<string | null>
+  onSubmit: (values: {
+    url: string
+    password: string
+    author: string
+    project: string
+    message: string
+  }) => Promise<string | null>
   onTest: (values: { url: string; password: string }) => Promise<{ ok: boolean; message: string }>
   onClear: () => void
 }
 
 const inputClass = 'field w-full font-mono text-xs'
 const labelClass = 'mb-1.5 block text-xs font-medium text-studio-text'
+const PROJECT_PATTERN = /^[a-z0-9][a-z0-9._-]{1,63}$/
 
 export default function SyncDialog({ mode, initial, onCancel, onSubmit, onTest, onClear }: SyncDialogProps) {
   const [url, setUrl] = useState(initial?.url ?? '')
   const [password, setPassword] = useState(initial?.password ?? '')
   const [author, setAuthor] = useState(initial?.author ?? '')
+  const [project, setProject] = useState(initial?.project ?? '')
   const [message, setMessage] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [testResult, setTestResult] = useState<{ ok: boolean; message: string } | null>(null)
@@ -44,6 +52,13 @@ export default function SyncDialog({ mode, initial, onCancel, onSubmit, onTest, 
       setError('URL Supabase wajib diisi.')
       return
     }
+    const projectValue = project.trim().toLowerCase()
+    if (!PROJECT_PATTERN.test(projectValue)) {
+      setError(
+        'ID project wajib diisi. Pakai huruf kecil, angka, titik, strip, atau underscore (2-64 karakter). Contoh: bca-cmnv'
+      )
+      return
+    }
     if (!password.trim() && !isConnString) {
       setError('DB password wajib diisi.')
       return
@@ -54,7 +69,13 @@ export default function SyncDialog({ mode, initial, onCancel, onSubmit, onTest, 
     }
     setBusy(true)
     setError(null)
-    const result = await onSubmit({ url: url.trim(), password, author: author.trim(), message: message.trim() })
+    const result = await onSubmit({
+      url: url.trim(),
+      password,
+      author: author.trim(),
+      project: projectValue,
+      message: message.trim()
+    })
     setBusy(false)
     if (result) setError(result)
   }
@@ -75,6 +96,7 @@ export default function SyncDialog({ mode, initial, onCancel, onSubmit, onTest, 
     setUrl('')
     setPassword('')
     setAuthor('')
+    setProject('')
     setMessage('')
     setError(null)
     setTestResult({ ok: true, message: 'Koneksi tersimpan sudah dihapus.' })
@@ -87,7 +109,7 @@ export default function SyncDialog({ mode, initial, onCancel, onSubmit, onTest, 
       onMouseDown={() => !busy && onCancel()}
     >
       <div
-        className="w-full max-w-md rounded-xl border border-studio-border bg-studio-elevated p-5 shadow-panel"
+        className="studio-scroll max-h-[90vh] w-full max-w-md overflow-y-auto rounded-xl border border-studio-border bg-studio-elevated p-5 shadow-panel"
         onMouseDown={(event) => event.stopPropagation()}
       >
         <h2 className="text-sm font-semibold text-studio-text">
@@ -96,7 +118,8 @@ export default function SyncDialog({ mode, initial, onCancel, onSubmit, onTest, 
         <p className="mt-1 text-xs text-studio-muted">
           {isUpload
             ? 'Kirim workspace lokal ke Supabase project kamu.'
-            : 'Tarik workspace dari Supabase project teman/kamu.'}
+            : 'Tarik workspace dari Supabase project teman/kamu.'}{' '}
+          Satu database bisa punya banyak project — pilih lewat ID Project.
         </p>
 
         <div className="mt-4 space-y-3">
@@ -109,7 +132,7 @@ export default function SyncDialog({ mode, initial, onCancel, onSubmit, onTest, 
                 setUrl(event.target.value)
                 setTestResult(null)
               }}
-              placeholder="https://xxxxxxxx.supabase.co"
+              placeholder="contoh: https://xxxxxxxx.supabase.co"
               spellCheck={false}
               className={inputClass}
             />
@@ -117,6 +140,25 @@ export default function SyncDialog({ mode, initial, onCancel, onSubmit, onTest, 
               Boleh juga connection string lengkap (postgresql://...). Disarankan tipe{' '}
               <span className="text-studio-muted">Session pooler</span> — koneksi direct (db.xxx.supabase.co) hanya
               jalan di jaringan IPv6.
+            </p>
+          </div>
+
+          <div>
+            <label className={labelClass}>ID Project</label>
+            <input
+              value={project}
+              onChange={(event) => {
+                setProject(event.target.value)
+                setTestResult(null)
+              }}
+              placeholder="contoh: project-123"
+              spellCheck={false}
+              className={inputClass}
+            />
+            <p className="mt-1 text-2xs text-studio-faint">
+              Kunci workspace di Supabase. Satu database bisa menampung banyak project — pisahkan dengan slug
+              (huruf kecil, angka, strip). Isi <span className="text-studio-muted">bca-cmnv</span> untuk project yang
+              sudah ada.
             </p>
           </div>
 
@@ -129,7 +171,7 @@ export default function SyncDialog({ mode, initial, onCancel, onSubmit, onTest, 
                 setPassword(event.target.value)
                 setTestResult(null)
               }}
-              placeholder="password database project"
+              placeholder="contoh: password database project"
               className={inputClass}
             />
             <p className="mt-1 text-2xs text-studio-faint">
@@ -142,7 +184,7 @@ export default function SyncDialog({ mode, initial, onCancel, onSubmit, onTest, 
             <input
               value={author}
               onChange={(event) => setAuthor(event.target.value)}
-              placeholder="mis. imam"
+              placeholder="contoh: Purwoto, Sajiman, Khairul"
               className={inputClass}
             />
           </div>
@@ -153,7 +195,7 @@ export default function SyncDialog({ mode, initial, onCancel, onSubmit, onTest, 
               <input
                 value={message}
                 onChange={(event) => setMessage(event.target.value)}
-                placeholder="mis. tambah endpoint roles"
+                placeholder="contoh: tambah endpoint roles"
                 className={inputClass}
                 onKeyDown={(event) => {
                   if (event.key === 'Enter') {

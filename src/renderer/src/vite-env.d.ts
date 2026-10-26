@@ -25,10 +25,16 @@ declare global {
         password: string
         author: string
         message: string
+        project: string
         snapshot: WorkspaceSnapshot
       }) => Promise<SyncUploadResult>
-      syncPull: (payload: { url: string; password: string }) => Promise<SyncPullResult>
-      syncCommits: (payload: { url: string; password: string; limit?: number }) => Promise<SyncCommitsResult>
+      syncPull: (payload: { url: string; password: string; project: string }) => Promise<SyncPullResult>
+      syncCommits: (payload: {
+        url: string
+        password: string
+        project: string
+        limit?: number
+      }) => Promise<SyncCommitsResult>
       syncTest: (payload: { url: string; password: string }) => Promise<{ ok: true } | { ok: false; error: string }>
       loadHistory: () => Promise<HistoryEntry[]>
       saveHistory: (entries: HistoryEntry[]) => Promise<boolean>

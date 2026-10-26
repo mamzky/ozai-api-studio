@@ -23,6 +23,7 @@ export async function syncUpload(
     url: connection.url,
     password: connection.password,
     author: connection.author,
+    project: connection.project,
     message,
     snapshot
   })
@@ -30,12 +31,20 @@ export async function syncUpload(
 
 export async function syncPull(connection: SyncConnection): Promise<SyncPullResult> {
   if (!window.api?.syncPull) return offline()
-  return window.api.syncPull({ url: connection.url, password: connection.password })
+  return window.api.syncPull({
+    url: connection.url,
+    password: connection.password,
+    project: connection.project
+  })
 }
 
 export async function syncCommits(connection: SyncConnection): Promise<SyncCommitsResult> {
   if (!window.api?.syncCommits) return offline()
-  return window.api.syncCommits({ url: connection.url, password: connection.password })
+  return window.api.syncCommits({
+    url: connection.url,
+    password: connection.password,
+    project: connection.project
+  })
 }
 
 export async function syncTest(connection: { url: string; password: string }): Promise<{ ok: true } | { ok: false; error: string }> {

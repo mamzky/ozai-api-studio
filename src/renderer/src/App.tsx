@@ -666,8 +666,19 @@ export default function App() {
   }, [])
 
   const handleSyncSubmit = useCallback(
-    async (values: { url: string; password: string; author: string; message: string }): Promise<string | null> => {
-      const connection = { url: values.url, password: values.password, author: values.author }
+    async (values: {
+      url: string
+      password: string
+      author: string
+      project: string
+      message: string
+    }): Promise<string | null> => {
+      const connection = {
+        url: values.url,
+        password: values.password,
+        author: values.author,
+        project: values.project
+      }
       setSync(connection)
 
       if (syncMode === 'upload') {
@@ -679,10 +690,11 @@ export default function App() {
         if (!result.ok) return result.error
         pushHistory({
           id: uid('h'),
-          message: values.message,
+          message: `[${values.project}] ${values.message}`,
           author: values.author || 'unknown',
           createdAt: new Date().toISOString(),
-          snapshot
+          snapshot,
+          project: values.project
         })
         setSyncMode(null)
         return null
@@ -693,10 +705,13 @@ export default function App() {
       applySnapshot(result.snapshot)
       pushHistory({
         id: uid('h'),
-        message: `Import from ${values.url} (updated ${new Date(result.updatedAt).toLocaleString()})`,
+        message: `[${values.project}] Import from ${values.url} (updated ${new Date(
+          result.updatedAt
+        ).toLocaleString()})`,
         author: result.author,
         createdAt: new Date().toISOString(),
-        snapshot: result.snapshot
+        snapshot: result.snapshot,
+        project: values.project
       })
       setSyncMode(null)
       return null

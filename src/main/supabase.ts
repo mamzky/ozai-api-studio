@@ -9,9 +9,9 @@ import type {
 } from '@shared/types'
 
 const SSL_CONFIG = { rejectUnauthorized: false }
-const WORKSPACE_ID = 'default'
 const CONNECT_TIMEOUT = 5000
 const CONNECT_CONCURRENCY = 10
+const PROJECT_PATTERN = /^[a-z0-9][a-z0-9._-]{1,63}$/
 
 const POOLER_PREFIXES = ['aws-0', 'aws-1']
 
@@ -49,11 +49,14 @@ interface AttemptFailure {
 
 class SyncConnectError extends Error {
   readonly syncCode: 'offline' | 'auth' | 'invalid' | 'unknown'
+  /** Kalau diisi, error berasal dari input field ini (bukan dari koneksi). */
+  readonly field?: 'project'
 
-  constructor(syncCode: 'offline' | 'auth' | 'invalid' | 'unknown', message: string) {
+  constructor(syncCode: 'offline' | 'auth' | 'invalid' | 'unknown', message: string, field?: 'project') {
     super(message)
     this.name = 'SyncConnectError'
     this.syncCode = syncCode
+    this.field = field
   }
 }
 
@@ -62,6 +65,19 @@ interface PoolerBase {
   database?: ClientConfig['database']
   ssl: typeof SSL_CONFIG
   connectionTimeoutMillis: number
+}
+
+function normalizeProject(value: string): string {
+  const project = (value || '').trim().toLowerCase()
+  if (!PROJECT_PATTERN.test(project)) {
+    throw new SyncConnectError(
+      'invalid',
+      'ID project tidak valid. Pakai huruf kecil, angka, titik, strip, atau underscore (2-64 karakter). ' +
+        'Contoh: bca-cmnv, pakuwon-phase-5',
+      'project'
+    )
+  }
+  return project
 }
 
 function isConnectionString(value: string): boolean {
@@ -322,7 +338,7 @@ async function connectFirst(configs: ClientConfig[], ref: string | null): Promis
 
 const SCHEMA_SQL = `
 create table if not exists studio_workspace (
-  id text primary key,
+  id_project text primary key,
   schema_version integer not null default 1,
   updated_at timestamptz not null default now(),
   author text,
@@ -330,14 +346,41 @@ create table if not exists studio_workspace (
 );
 create table if not exists studio_commits (
   id bigserial primary key,
+  id_project text not null,
   message text,
   author text,
   created_at timestamptz not null default now(),
   data jsonb not null
 );
+
+-- Migrasi dari skema lama: satu workspace global dengan primary key \`id\`.
+-- Baris lama dinamai 'default'; upload ulang dengan slug project yang benar.
+do $$
+begin
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema = current_schema()
+      and table_name = 'studio_workspace'
+      and column_name = 'id'
+  ) then
+    alter table studio_workspace add column if not exists id_project text;
+    update studio_workspace set id_project = id where id_project is null;
+    alter table studio_workspace drop constraint if exists studio_workspace_pkey;
+    alter table studio_workspace alter column id_project set not null;
+    alter table studio_workspace add primary key (id_project);
+    alter table studio_workspace drop column id;
+  end if;
+end $$;
+
+alter table studio_commits add column if not exists id_project text;
+update studio_commits set id_project = 'default' where id_project is null;
+alter table studio_commits alter column id_project set not null;
+
 alter table studio_workspace enable row level security;
 alter table studio_commits enable row level security;
+create index if not exists studio_workspace_updated_at_idx on studio_workspace (updated_at desc);
 create index if not exists studio_commits_created_at_idx on studio_commits (created_at desc);
+create index if not exists studio_commits_project_idx on studio_commits (id_project, created_at desc);
 `
 
 function classifyError(error: unknown): { code: 'offline' | 'auth' | 'invalid' | 'unknown'; message: string } {
@@ -373,7 +416,8 @@ function isSupabaseInput(input: string): boolean {
 
 function toSyncError(error: unknown, url: string): SyncError {
   const classified = classifyError(error)
-  const needsHint = classified.code === 'offline' || classified.code === 'invalid'
+  const isFieldError = error instanceof SyncConnectError && Boolean(error.field)
+  const needsHint = !isFieldError && (classified.code === 'offline' || classified.code === 'invalid')
 
   if (needsHint && isSupabaseInput(url) && !classified.message.includes('Session pooler')) {
     const hint =
@@ -404,22 +448,24 @@ export async function uploadWorkspace(
   password: string,
   author: string,
   message: string,
+  project: string,
   snapshot: WorkspaceSnapshot
 ): Promise<SyncUploadResult> {
   try {
+    const idProject = normalizeProject(project)
     return await withClient(url, password, async (client) => {
       await client.query(SCHEMA_SQL)
       const data = JSON.stringify(snapshot)
       await client.query(
-        `insert into studio_workspace (id, schema_version, updated_at, author, data)
+        `insert into studio_workspace (id_project, schema_version, updated_at, author, data)
          values ($1, 1, now(), $2, $3::jsonb)
-         on conflict (id) do update
+         on conflict (id_project) do update
            set schema_version = 1, updated_at = now(), author = excluded.author, data = excluded.data`,
-        [WORKSPACE_ID, author, data]
+        [idProject, author, data]
       )
       const inserted = await client.query<{ id: string }>(
-        `insert into studio_commits (message, author, data) values ($1, $2, $3::jsonb) returning id`,
-        [message, author, data]
+        `insert into studio_commits (id_project, message, author, data) values ($1, $2, $3, $4::jsonb) returning id`,
+        [idProject, message, author, data]
       )
       return { ok: true as const, commitId: Number(inserted.rows[0]?.id ?? 0) }
     })
@@ -428,16 +474,21 @@ export async function uploadWorkspace(
   }
 }
 
-export async function pullWorkspace(url: string, password: string): Promise<SyncPullResult> {
+export async function pullWorkspace(url: string, password: string, project: string): Promise<SyncPullResult> {
   try {
+    const idProject = normalizeProject(project)
     return await withClient(url, password, async (client) => {
       await client.query(SCHEMA_SQL)
       const result = await client.query<{ data: WorkspaceSnapshot; updated_at: string; author: string | null }>(
-        `select data, updated_at, author from studio_workspace where id = $1`,
-        [WORKSPACE_ID]
+        `select data, updated_at, author from studio_workspace where id_project = $1`,
+        [idProject]
       )
       if (result.rows.length === 0) {
-        return { ok: false as const, code: 'invalid' as const, error: 'Belum ada workspace yang di-upload ke Supabase ini.' }
+        return {
+          ok: false as const,
+          code: 'invalid' as const,
+          error: `Belum ada workspace untuk project "${idProject}" di Supabase ini. Upload dulu dari sisi yang punya datanya.`
+        }
       }
       const row = result.rows[0]
       return {
@@ -452,13 +503,22 @@ export async function pullWorkspace(url: string, password: string): Promise<Sync
   }
 }
 
-export async function listCommits(url: string, password: string, limit = 50): Promise<SyncCommitsResult> {
+export async function listCommits(
+  url: string,
+  password: string,
+  project: string,
+  limit = 50
+): Promise<SyncCommitsResult> {
   try {
+    const idProject = normalizeProject(project)
     return await withClient(url, password, async (client) => {
       await client.query(SCHEMA_SQL)
       const result = await client.query<{ id: string; message: string | null; author: string | null; created_at: string }>(
-        `select id, message, author, created_at from studio_commits order by id desc limit $1`,
-        [limit]
+        `select id, message, author, created_at from studio_commits
+         where id_project = $1
+         order by id desc
+         limit $2`,
+        [idProject, limit]
       )
       const commits: RemoteCommit[] = result.rows.map((row) => ({
         id: Number(row.id),
