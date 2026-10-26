@@ -18,5 +18,8 @@ hoppscotch-team-collections-openapi.json
 # keep project instructions in the repo
 !AGENTS.md
 
+# raw design assets (icons are exported into build/)
+ozai iconpack/
+
 # local mock endpoint credentials
 secret.txt

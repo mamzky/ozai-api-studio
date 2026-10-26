@@ -201,6 +201,7 @@ function registerIpc(): void {
 }
 
 function createWindow(): void {
+  const devIcon = join(__dirname, '../../build/icon.png')
   const mainWindow = new BrowserWindow({
     width: 1440,
     height: 900,
@@ -208,6 +209,7 @@ function createWindow(): void {
     minHeight: 640,
     show: false,
     backgroundColor: '#0b0e14',
+    icon: existsSync(devIcon) ? devIcon : undefined,
     titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
     trafficLightPosition: { x: 16, y: 16 },
     webPreferences: {
@@ -238,6 +240,12 @@ app.whenReady().then(async () => {
   await migrateLegacyData()
   registerIpc()
   createWindow()
+
+  // In dev the dock still shows the Electron icon; use the app icon instead.
+  if (!app.isPackaged && process.platform === 'darwin') {
+    const devIcon = join(__dirname, '../../build/icon.png')
+    if (existsSync(devIcon)) app.dock?.setIcon(devIcon)
+  }
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
