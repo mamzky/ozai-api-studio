@@ -8,14 +8,14 @@ Built with Electron 31, React 18, TypeScript, and Tailwind CSS. Sync uses a dire
 
 ## Download
 
-Grab the latest build from the [Releases page](https://github.com/mamzky/ozai-api-studio/releases/latest). Assets for `v0.1.0`:
+Grab the latest build from the [Releases page](https://github.com/mamzky/ozai-api-studio/releases/latest). Assets for `v0.1.1`:
 
 | Platform | File | Size |
 | --- | --- | --- |
-| macOS (Apple Silicon) | [`Ozai.API.Studio-0.1.0-arm64.dmg`](https://github.com/mamzky/ozai-api-studio/releases/download/v0.1.0/Ozai.API.Studio-0.1.0-arm64.dmg) | 92 MB |
-| macOS (Apple Silicon, portable) | [`Ozai.API.Studio-0.1.0-arm64-mac.zip`](https://github.com/mamzky/ozai-api-studio/releases/download/v0.1.0/Ozai.API.Studio-0.1.0-arm64-mac.zip) | 92 MB |
-| Windows 10/11 (x64) | [`Ozai.API.Studio.Setup.0.1.0.exe`](https://github.com/mamzky/ozai-api-studio/releases/download/v0.1.0/Ozai.API.Studio.Setup.0.1.0.exe) | 74 MB |
-| Windows (x64, portable) | [`Ozai.API.Studio-0.1.0-win.zip`](https://github.com/mamzky/ozai-api-studio/releases/download/v0.1.0/Ozai.API.Studio-0.1.0-win.zip) | 103 MB |
+| macOS (Apple Silicon) | [`Ozai.API.Studio-0.1.1-arm64.dmg`](https://github.com/mamzky/ozai-api-studio/releases/download/v0.1.1/Ozai.API.Studio-0.1.1-arm64.dmg) | ≈ 92 MB |
+| macOS (Apple Silicon, portable) | [`Ozai.API.Studio-0.1.1-arm64-mac.zip`](https://github.com/mamzky/ozai-api-studio/releases/download/v0.1.1/Ozai.API.Studio-0.1.1-arm64-mac.zip) | ≈ 92 MB |
+| Windows 10/11 (x64) | [`Ozai.API.Studio.Setup.0.1.1.exe`](https://github.com/mamzky/ozai-api-studio/releases/download/v0.1.1/Ozai.API.Studio.Setup.0.1.1.exe) | ≈ 74 MB |
+| Windows (x64, portable) | [`Ozai.API.Studio-0.1.1-win.zip`](https://github.com/mamzky/ozai-api-studio/releases/download/v0.1.1/Ozai.API.Studio-0.1.1-win.zip) | ≈ 103 MB |
 
 The repository is public, so the links above start the download directly. Older builds are listed on the [releases page](https://github.com/mamzky/ozai-api-studio/releases).
 
