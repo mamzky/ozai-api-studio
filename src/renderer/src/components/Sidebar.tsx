@@ -1,6 +1,7 @@
 import type { MouseEvent as ReactMouseEvent } from 'react'
 import CollectionTree from './CollectionTree'
-import { Bolt, Layers, Plus, Search, Trash, Upload } from './Icons'
+import { Layers, Plus, Search, Trash, Upload } from './Icons'
+import appLogo from '../assets/app-logo.png'
 import type { Collection } from '../types/api'
 
 interface RenameTarget {
@@ -62,9 +63,12 @@ export default function Sidebar({
   return (
     <aside className="flex w-[280px] shrink-0 flex-col border-r border-studio-border bg-studio-sidebar">
       <div className="flex h-12 items-center gap-2.5 border-b border-studio-border px-4">
-        <div className="grid h-7 w-7 place-items-center rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow">
-          <Bolt className="h-3.5 w-3.5" />
-        </div>
+        <img
+          src={appLogo}
+          alt="Ozai API Studio"
+          className="h-8 w-8 shrink-0 select-none"
+          draggable={false}
+        />
         <span className="text-sm font-semibold tracking-tight">Ozai API Studio</span>
       </div>
 
