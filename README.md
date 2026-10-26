@@ -8,14 +8,16 @@ Built with Electron 31, React 18, TypeScript, and Tailwind CSS. Sync uses a dire
 
 ## Download
 
-Grab the latest build from the [Releases page](https://github.com/mamzky/ozai-api-studio/releases/latest).
+Grab the latest build from the [Releases page](https://github.com/mamzky/ozai-api-studio/releases/latest). Assets for `v0.1.0`:
 
-| Platform | File | Notes |
+| Platform | File | Size |
 | --- | --- | --- |
-| macOS (Apple Silicon) | `Ozai API Studio-0.1.0-arm64.dmg` | Recommended. Drag the app into `/Applications`. |
-| macOS (Apple Silicon) | `Ozai API Studio-0.1.0-arm64-mac.zip` | Portable app bundle, useful for scripting. |
-| Windows 10/11 (x64) | `Ozai API Studio Setup 0.1.0.exe` | Installer with Start-menu entry and uninstaller. |
-| Windows (x64) | `Ozai API Studio-0.1.0-win.zip` | Portable folder; run `Ozai API Studio.exe` directly. |
+| macOS (Apple Silicon) | [`Ozai.API.Studio-0.1.0-arm64.dmg`](https://github.com/mamzky/ozai-api-studio/releases/download/v0.1.0/Ozai.API.Studio-0.1.0-arm64.dmg) | 92 MB |
+| macOS (Apple Silicon, portable) | [`Ozai.API.Studio-0.1.0-arm64-mac.zip`](https://github.com/mamzky/ozai-api-studio/releases/download/v0.1.0/Ozai.API.Studio-0.1.0-arm64-mac.zip) | 92 MB |
+| Windows 10/11 (x64) | [`Ozai.API.Studio.Setup.0.1.0.exe`](https://github.com/mamzky/ozai-api-studio/releases/download/v0.1.0/Ozai.API.Studio.Setup.0.1.0.exe) | 81 MB |
+| Windows (x64, portable) | [`Ozai.API.Studio-0.1.0-win.zip`](https://github.com/mamzky/ozai-api-studio/releases/download/v0.1.0/Ozai.API.Studio-0.1.0-win.zip) | 103 MB |
+
+The repository is private, so download links require a signed-in GitHub account with access.
 
 Intel Macs and Linux are not part of the release matrix yet. Build from source instead (see [Run from source](#run-from-source)).
 
