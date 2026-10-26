@@ -1,6 +1,6 @@
 {
   "name": "ozai-api-studio",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Ozai API Studio - simple desktop API client built with Electron, React and TypeScript",
   "//": [
     "CARA PAKAI (jalankan di terminal, dari folder project ini):",
