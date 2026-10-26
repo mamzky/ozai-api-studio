@@ -13,6 +13,12 @@ const formats: { value: BodyFormat; label: string }[] = [
   { value: 'raw', label: 'Raw' }
 ]
 
+const formatTitles: Record<BodyFormat, string> = {
+  none: 'Send the request without a body',
+  json: 'Send a JSON body',
+  raw: 'Send a raw text body'
+}
+
 const isValidJson = (content: string): boolean => {
   if (!content.trim()) return true
   try {
@@ -40,6 +46,7 @@ export default function BodyEditor({ body, onChange }: BodyEditorProps) {
                 key={format.value}
                 type="button"
                 onClick={() => patch({ format: format.value })}
+                title={formatTitles[format.value]}
                 className={`rounded-md px-3 py-1 text-xs font-medium transition-colors ${
                   active
                     ? 'bg-studio-accent/20 text-studio-text ring-1 ring-inset ring-studio-accent/30'
@@ -64,6 +71,7 @@ export default function BodyEditor({ body, onChange }: BodyEditorProps) {
               <button
                 type="button"
                 onClick={() => patch({ content: prettyJson(body.content) })}
+                title="Reformat the JSON body with indentation"
                 className="btn border border-studio-border text-studio-muted hover:bg-studio-strong/50 hover:text-studio-text"
               >
                 Beautify

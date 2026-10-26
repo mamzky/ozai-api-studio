@@ -65,6 +65,7 @@ export default function AuthEditor({ auth, onChange, variables }: AuthEditorProp
               <button
                 type="button"
                 onClick={() => switchTokenMode('variables')}
+                title="Use an environment variable for the token, e.g. {{token}}"
                 className={`rounded-md px-2.5 py-1 text-2xs font-medium transition-colors ${
                   tokenInVariableMode
                     ? 'bg-studio-accent/20 text-studio-text ring-1 ring-inset ring-studio-accent/30'
@@ -76,6 +77,7 @@ export default function AuthEditor({ auth, onChange, variables }: AuthEditorProp
               <button
                 type="button"
                 onClick={() => switchTokenMode('custom')}
+                title="Type a literal token value"
                 className={`rounded-md px-2.5 py-1 text-2xs font-medium transition-colors ${
                   !tokenInVariableMode
                     ? 'bg-studio-accent/20 text-studio-text ring-1 ring-inset ring-studio-accent/30'

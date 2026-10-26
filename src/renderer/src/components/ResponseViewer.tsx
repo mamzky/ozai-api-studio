@@ -103,6 +103,7 @@ export default function ResponseViewer({
           <button
             type="button"
             onClick={onCloseExample}
+            title="Close the example preview and go back to the live response"
             className="ml-auto shrink-0 rounded px-2 py-0.5 text-2xs text-studio-muted transition-colors hover:bg-studio-strong/50 hover:text-studio-text"
           >
             Back to live response
@@ -154,6 +155,7 @@ export default function ResponseViewer({
                   key={item.id}
                   type="button"
                   onClick={() => setTab(item.id)}
+                  title={item.id === 'body' ? 'Show the response body' : 'Show the response headers'}
                   className={`relative rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
                     active ? 'bg-studio-strong/60 text-studio-text' : 'text-studio-muted hover:text-studio-text'
                   }`}
@@ -179,6 +181,7 @@ export default function ResponseViewer({
               type="button"
               onClick={copyBody}
               disabled={!response || Boolean(error)}
+              title="Copy the response body to the clipboard"
               className="ml-1 rounded-md px-2 py-1 text-xs text-studio-muted transition-colors hover:bg-studio-strong/50 hover:text-studio-text disabled:opacity-40"
             >
               {copied ? 'Copied' : 'Copy'}

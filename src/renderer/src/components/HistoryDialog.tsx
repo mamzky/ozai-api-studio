@@ -43,6 +43,7 @@ export default function HistoryDialog({ entries, onRollback, onDelete, onCancel 
           <button
             type="button"
             onClick={onCancel}
+            title="Close local history"
             className="btn border border-studio-border text-studio-muted hover:bg-studio-strong/50 hover:text-studio-text"
           >
             Close
@@ -70,6 +71,7 @@ export default function HistoryDialog({ entries, onRollback, onDelete, onCancel 
               <button
                 type="button"
                 onClick={() => onRollback(entry)}
+                title={`Restore this snapshot from ${formatDate(entry.createdAt)}`}
                 className="btn border border-studio-border text-studio-muted hover:bg-studio-strong/50 hover:text-studio-text"
               >
                 Rollback

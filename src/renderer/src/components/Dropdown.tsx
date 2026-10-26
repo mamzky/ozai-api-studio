@@ -40,7 +40,12 @@ export default function Dropdown({
 
   return (
     <div className="relative no-drag" ref={ref}>
-      <button type="button" onClick={() => setOpen((prev) => !prev)} className={triggerClassName}>
+      <button
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        title={open ? 'Close the option list' : 'Open the option list'}
+        className={triggerClassName}
+      >
         <span className="flex min-w-0 items-center gap-2 truncate">
           {renderValue ? renderValue(selected) : selected?.label}
         </span>
@@ -59,6 +64,7 @@ export default function Dropdown({
                   onChange(option.value)
                   setOpen(false)
                 }}
+                title={typeof option.label === 'string' ? option.label : undefined}
                 className={`flex w-full items-center justify-between gap-3 rounded-md px-2.5 py-1.5 text-left text-sm transition-colors ${
                   active ? 'bg-studio-accent/15 text-studio-text' : 'text-studio-muted hover:bg-studio-strong/60 hover:text-studio-text'
                 }`}

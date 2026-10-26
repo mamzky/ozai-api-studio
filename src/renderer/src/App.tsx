@@ -91,6 +91,7 @@ function EmptyState({ onCreate }: { onCreate: () => void }) {
       <button
         type="button"
         onClick={onCreate}
+        title="Create a new request in the selected collection"
         className="btn mt-1 border border-studio-border bg-studio-panel text-studio-muted hover:bg-studio-strong/50 hover:text-studio-text"
       >
         <Plus className="h-3.5 w-3.5" />

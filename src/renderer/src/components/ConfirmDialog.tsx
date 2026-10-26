@@ -47,6 +47,7 @@ export default function ConfirmDialog({
             <button
               type="button"
               onClick={onCancel}
+              title="Close without making changes"
               className="btn border border-studio-border text-studio-muted hover:bg-studio-strong/50 hover:text-studio-text"
             >
               {cancelLabel}
@@ -55,6 +56,7 @@ export default function ConfirmDialog({
           <button
             type="button"
             onClick={onConfirm}
+            title={variant === 'danger' ? 'Confirm this destructive action' : 'Apply this action'}
             className={`btn text-white ${
               variant === 'danger' ? 'bg-red-500 hover:bg-red-400' : 'bg-studio-accent hover:bg-blue-500'
             }`}

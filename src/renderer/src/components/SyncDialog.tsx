@@ -234,6 +234,7 @@ export default function SyncDialog({ mode, initial, onCancel, onSubmit, onTest, 
               type="button"
               onClick={runTest}
               disabled={busy || testing}
+              title="Check the URL, project, and password against the database"
               className="btn border border-studio-border text-studio-muted hover:bg-studio-strong/50 hover:text-studio-text disabled:opacity-50"
             >
               {testing ? 'Testing…' : 'Test connection'}
@@ -252,6 +253,7 @@ export default function SyncDialog({ mode, initial, onCancel, onSubmit, onTest, 
             type="button"
             onClick={onCancel}
             disabled={busy}
+            title="Close without saving"
             className="btn border border-studio-border text-studio-muted hover:bg-studio-strong/50 hover:text-studio-text disabled:opacity-50"
           >
             Cancel
@@ -260,6 +262,11 @@ export default function SyncDialog({ mode, initial, onCancel, onSubmit, onTest, 
             type="button"
             onClick={submit}
             disabled={busy}
+            title={
+              isUpload
+                ? 'Upload this workspace to the selected project'
+                : 'Replace the local workspace with the selected project'
+            }
             className="btn bg-studio-accent text-white hover:bg-blue-500 disabled:opacity-70"
           >
             {busy ? (isUpload ? 'Uploading…' : 'Importing…') : isUpload ? 'Upload' : 'Import'}

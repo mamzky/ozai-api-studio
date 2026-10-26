@@ -81,6 +81,7 @@ export default function EnvironmentsModal({
           <button
             type="button"
             onClick={onClose}
+            title="Close the environments manager"
             className="btn border border-studio-border text-studio-muted hover:bg-studio-strong/50 hover:text-studio-text"
           >
             Done
@@ -103,6 +104,7 @@ export default function EnvironmentsModal({
                     <button
                       type="button"
                       onClick={() => setSelectedId(environment.id)}
+                      title={`Open ${environment.name || 'this environment'}`}
                       className="flex min-w-0 flex-1 items-center gap-2 text-left"
                     >
                       <span
@@ -130,6 +132,7 @@ export default function EnvironmentsModal({
               <button
                 type="button"
                 onClick={addEnvironment}
+                title="Create a new environment"
                 className="btn w-full justify-center border border-dashed border-studio-strong text-studio-muted hover:border-studio-accent/50 hover:bg-studio-strong/40 hover:text-studio-text"
               >
                 <Plus className="h-3.5 w-3.5" />

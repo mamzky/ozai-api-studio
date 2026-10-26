@@ -72,11 +72,18 @@ export default function PromptDialog({
           <button
             type="button"
             onClick={onCancel}
+            title="Cancel without saving"
             className="btn border border-studio-border text-studio-muted hover:bg-studio-strong/50 hover:text-studio-text"
           >
             Cancel
           </button>
-          <button type="button" onClick={submit} disabled={!value.trim()} className="btn bg-studio-accent text-white hover:bg-blue-500 disabled:opacity-50">
+          <button
+            type="button"
+            onClick={submit}
+            disabled={!value.trim()}
+            title="Apply this change"
+            className="btn bg-studio-accent text-white hover:bg-blue-500 disabled:opacity-50"
+          >
             {confirmLabel}
           </button>
         </div>

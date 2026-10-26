@@ -111,6 +111,7 @@ export default function RequestEditor({ request, onChange, onSend, sending, envi
           type="button"
           onClick={onSend}
           disabled={sending}
+          title={request.mock ? 'Send — returns the mock example without a network call' : 'Send the request'}
           className="btn h-9 min-w-[92px] justify-center bg-studio-accent text-white shadow hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-70"
         >
           {sending ? <Spinner /> : <Send />}

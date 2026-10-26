@@ -75,6 +75,7 @@ export default function ContextMenu({ x, y, items, onClose }: ContextMenuProps) 
             type="button"
             disabled={item.disabled}
             onClick={() => handleSelect(item)}
+            title={item.label}
             className={itemClass(item.danger)}
           >
             <span className="flex-1 truncate text-left">{item.label}</span>
@@ -89,6 +90,7 @@ export default function ContextMenu({ x, y, items, onClose }: ContextMenuProps) 
                   type="button"
                   disabled={sub.disabled}
                   onClick={() => handleSelect(sub)}
+                  title={sub.label}
                   className={itemClass(sub.danger)}
                 >
                   <span className="flex-1 truncate text-left">{sub.label}</span>

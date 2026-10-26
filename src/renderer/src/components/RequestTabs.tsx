@@ -33,6 +33,15 @@ export default function RequestTabs({ request, onChange, environmentVariables }:
               key={tab.id}
               type="button"
               onClick={() => setActive(tab.id)}
+              title={
+                tab.id === 'params'
+                  ? 'Edit query parameters'
+                  : tab.id === 'auth'
+                    ? 'Configure authorization for this request'
+                    : tab.id === 'headers'
+                      ? 'Edit request headers'
+                      : 'Edit the request body'
+              }
               className={`relative flex items-center gap-1.5 px-3 py-2.5 text-xs font-medium transition-colors ${
                 isActive ? 'text-studio-text' : 'text-studio-muted hover:text-studio-text'
               }`}

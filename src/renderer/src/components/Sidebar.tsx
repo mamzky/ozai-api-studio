@@ -141,6 +141,7 @@ export default function Sidebar({
         <button
           type="button"
           onClick={onNewCollection}
+          title="Create a new collection"
           className="btn w-full justify-center border border-dashed border-studio-strong text-studio-muted hover:border-studio-accent/50 hover:bg-studio-strong/40 hover:text-studio-text"
         >
           <Plus className="h-3.5 w-3.5" />

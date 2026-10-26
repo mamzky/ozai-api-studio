@@ -149,6 +149,7 @@ export default function ExampleDialog({
           <button
             type="button"
             onClick={onCancel}
+            title="Discard this example"
             className="btn border border-studio-border text-xs text-studio-muted hover:bg-studio-strong/50 hover:text-studio-text"
           >
             Cancel
@@ -157,6 +158,7 @@ export default function ExampleDialog({
             type="button"
             onClick={submit}
             disabled={!valid}
+            title="Save this response as an example under the request"
             className="btn bg-studio-accent text-xs text-white hover:bg-blue-500 disabled:opacity-50"
           >
             <Bookmark className="h-3.5 w-3.5" />

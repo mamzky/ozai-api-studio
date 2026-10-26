@@ -122,6 +122,7 @@ export default function KeyValueTable({
         <button
           type="button"
           onClick={addRow}
+          title="Add a new empty row"
           className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-studio-muted transition-colors hover:bg-studio-strong/50 hover:text-studio-text"
         >
           <Plus className="h-3.5 w-3.5" />

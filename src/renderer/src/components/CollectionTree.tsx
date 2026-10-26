@@ -212,6 +212,7 @@ export default function CollectionTree({
         <button
           type="button"
           onClick={() => onToggle(key)}
+          title={`${open ? 'Collapse' : 'Expand'} folder`}
           className="group flex w-full items-center gap-1.5 rounded-md px-2 py-1.5 text-left text-sm text-studio-muted transition-colors hover:bg-studio-strong/40 hover:text-studio-text"
         >
           {open ? (
@@ -261,6 +262,7 @@ export default function CollectionTree({
                 onToggle(collection.id)
               }}
               onContextMenu={(event) => onCollectionContextMenu(collection.id, event)}
+              title={`${isOpen ? 'Collapse' : 'Expand'} collection`}
               className={`group flex w-full items-center gap-1.5 rounded-md px-1.5 py-1.5 text-left text-sm transition-colors ${
                 collectionActive ? 'bg-studio-strong/50 text-studio-text' : 'text-studio-text hover:bg-studio-strong/40'
               }`}
@@ -294,6 +296,7 @@ export default function CollectionTree({
                   <button
                     type="button"
                     onClick={() => onNewRequest(collection.id)}
+                    title="Add the first request to this collection"
                     className="flex items-center gap-1.5 rounded-md px-2 py-1.5 text-left text-xs text-studio-faint transition-colors hover:bg-studio-strong/40 hover:text-studio-text"
                   >
                     <Plus className="h-3.5 w-3.5" />

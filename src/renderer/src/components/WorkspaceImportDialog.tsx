@@ -116,6 +116,7 @@ export default function WorkspaceImportDialog({
           <button
             type="button"
             onClick={onCancel}
+            title="Cancel the import"
             className="btn border border-studio-border text-xs text-studio-muted hover:bg-studio-strong/50 hover:text-studio-text"
           >
             Cancel
@@ -125,6 +126,7 @@ export default function WorkspaceImportDialog({
             <button
               type="button"
               onClick={() => onImport('merge')}
+              title="Add collections that are not in this workspace yet"
               className={`btn text-xs ${
                 hasExisting
                   ? 'border border-studio-border text-studio-muted hover:bg-studio-strong/50 hover:text-studio-text'
@@ -139,6 +141,7 @@ export default function WorkspaceImportDialog({
             <button
               type="button"
               onClick={() => onImport('replace')}
+              title="Replace the local collections with the imported ones"
               className="btn bg-amber-500 text-xs text-studio-bg hover:bg-amber-400"
             >
               Replace existing ({existingCollections.length})
