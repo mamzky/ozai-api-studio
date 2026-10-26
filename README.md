@@ -12,10 +12,10 @@ Grab the latest build from the [Releases page](https://github.com/mamzky/ozai-ap
 
 | Platform | File | Size |
 | --- | --- | --- |
-| macOS (Apple Silicon) | [`Ozai.API.Studio-0.1.1-arm64.dmg`](https://github.com/mamzky/ozai-api-studio/releases/download/v0.1.1/Ozai.API.Studio-0.1.1-arm64.dmg) | ≈ 92 MB |
-| macOS (Apple Silicon, portable) | [`Ozai.API.Studio-0.1.1-arm64-mac.zip`](https://github.com/mamzky/ozai-api-studio/releases/download/v0.1.1/Ozai.API.Studio-0.1.1-arm64-mac.zip) | ≈ 92 MB |
-| Windows 10/11 (x64) | [`Ozai.API.Studio.Setup.0.1.1.exe`](https://github.com/mamzky/ozai-api-studio/releases/download/v0.1.1/Ozai.API.Studio.Setup.0.1.1.exe) | ≈ 74 MB |
-| Windows (x64, portable) | [`Ozai.API.Studio-0.1.1-win.zip`](https://github.com/mamzky/ozai-api-studio/releases/download/v0.1.1/Ozai.API.Studio-0.1.1-win.zip) | ≈ 103 MB |
+| macOS (Apple Silicon) | [`Ozai.API.Studio-0.1.1-arm64.dmg`](https://github.com/mamzky/ozai-api-studio/releases/download/v0.1.1/Ozai.API.Studio-0.1.1-arm64.dmg) | 96.5 MB |
+| macOS (Apple Silicon, portable) | [`Ozai.API.Studio-0.1.1-arm64-mac.zip`](https://github.com/mamzky/ozai-api-studio/releases/download/v0.1.1/Ozai.API.Studio-0.1.1-arm64-mac.zip) | 94.2 MB |
+| Windows 10/11 (x64) | [`Ozai.API.Studio.Setup.0.1.1.exe`](https://github.com/mamzky/ozai-api-studio/releases/download/v0.1.1/Ozai.API.Studio.Setup.0.1.1.exe) | 74.5 MB |
+| Windows (x64, portable) | [`Ozai.API.Studio-0.1.1-win.zip`](https://github.com/mamzky/ozai-api-studio/releases/download/v0.1.1/Ozai.API.Studio-0.1.1-win.zip) | 103.5 MB |
 
 The repository is public, so the links above start the download directly. Older builds are listed on the [releases page](https://github.com/mamzky/ozai-api-studio/releases).
 
