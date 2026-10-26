@@ -17,7 +17,7 @@ Grab the latest build from the [Releases page](https://github.com/mamzky/ozai-ap
 | Windows 10/11 (x64) | [`Ozai.API.Studio.Setup.0.1.0.exe`](https://github.com/mamzky/ozai-api-studio/releases/download/v0.1.0/Ozai.API.Studio.Setup.0.1.0.exe) | 74 MB |
 | Windows (x64, portable) | [`Ozai.API.Studio-0.1.0-win.zip`](https://github.com/mamzky/ozai-api-studio/releases/download/v0.1.0/Ozai.API.Studio-0.1.0-win.zip) | 103 MB |
 
-The repository is private, so download links require a signed-in GitHub account with access.
+The repository is public, so the links above start the download directly. Older builds are listed on the [releases page](https://github.com/mamzky/ozai-api-studio/releases).
 
 Intel Macs and Linux are not part of the release matrix yet. Build from source instead (see [Run from source](#run-from-source)).
 
