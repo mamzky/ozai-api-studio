@@ -6,6 +6,14 @@ Built with Electron 31, React 18, TypeScript, and Tailwind CSS. Sync uses a dire
 
 ![Ozai API Studio workspace](docs/screenshots/workspace.png)
 
+## Demo
+
+A 10-second walkthrough: send a request in mock mode (no network call) and upload the workspace to Supabase per project.
+
+[![Ozai API Studio demo](docs/screenshots/ozai-demo-poster.jpg)](docs/screenshots/ozai-demo.mp4)
+
+[▶ Watch the demo video (MP4, 2.3 MB)](docs/screenshots/ozai-demo.mp4)
+
 ## Download
 
 Grab the latest build from the [Releases page](https://github.com/mamzky/ozai-api-studio/releases/latest). Assets for `v0.1.2`:
