@@ -4,6 +4,8 @@ A fast, keyboard-friendly desktop API client for macOS and Windows. Build collec
 
 Built with Electron 31, React 18, TypeScript, and Tailwind CSS. Sync uses a direct Postgres connection to Supabase (no extra backend server).
 
+Technical deep dive — stack, architecture, and design decisions: [`docs/TEKNOLOGI.md`](docs/TEKNOLOGI.md) (Indonesian).
+
 ![Ozai API Studio workspace](docs/screenshots/workspace.png)
 
 ## Demo
@@ -16,14 +18,14 @@ A 10-second walkthrough: send a request in mock mode (no network call) and uploa
 
 ## Download
 
-Grab the latest build from the [Releases page](https://github.com/mamzky/ozai-api-studio/releases/latest). Assets for `v0.1.2`:
+Grab the latest build from the [Releases page](https://github.com/mamzky/ozai-api-studio/releases/latest). Assets for `v0.1.3`:
 
 | Platform | File | Size |
 | --- | --- | --- |
-| macOS (Apple Silicon) | [`Ozai.API.Studio-0.1.2-arm64.dmg`](https://github.com/mamzky/ozai-api-studio/releases/download/v0.1.2/Ozai.API.Studio-0.1.2-arm64.dmg) | 96.5 MB |
-| macOS (Apple Silicon, portable) | [`Ozai.API.Studio-0.1.2-arm64-mac.zip`](https://github.com/mamzky/ozai-api-studio/releases/download/v0.1.2/Ozai.API.Studio-0.1.2-arm64-mac.zip) | 94.2 MB |
-| Windows 10/11 (x64) | [`Ozai.API.Studio.Setup.0.1.2.exe`](https://github.com/mamzky/ozai-api-studio/releases/download/v0.1.2/Ozai.API.Studio.Setup.0.1.2.exe) | 74.5 MB |
-| Windows (x64, portable) | [`Ozai.API.Studio-0.1.2-win.zip`](https://github.com/mamzky/ozai-api-studio/releases/download/v0.1.2/Ozai.API.Studio-0.1.2-win.zip) | 103.5 MB |
+| macOS (Apple Silicon) | [`Ozai.API.Studio-0.1.3-arm64.dmg`](https://github.com/mamzky/ozai-api-studio/releases/download/v0.1.3/Ozai.API.Studio-0.1.3-arm64.dmg) | 96.5 MB |
+| macOS (Apple Silicon, portable) | [`Ozai.API.Studio-0.1.3-arm64-mac.zip`](https://github.com/mamzky/ozai-api-studio/releases/download/v0.1.3/Ozai.API.Studio-0.1.3-arm64-mac.zip) | 94.2 MB |
+| Windows 10/11 (x64) | [`Ozai.API.Studio.Setup.0.1.3.exe`](https://github.com/mamzky/ozai-api-studio/releases/download/v0.1.3/Ozai.API.Studio.Setup.0.1.3.exe) | 74.5 MB |
+| Windows (x64, portable) | [`Ozai.API.Studio-0.1.3-win.zip`](https://github.com/mamzky/ozai-api-studio/releases/download/v0.1.3/Ozai.API.Studio-0.1.3-win.zip) | 103.5 MB |
 
 The repository is public, so the links above start the download directly. Older builds are listed on the [releases page](https://github.com/mamzky/ozai-api-studio/releases).
 
